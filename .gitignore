@@ -1,0 +1,233 @@
+# IAU Portal - Git Ignore Configuration
+# Created: 2025-12-26
+# Purpose: Exclude sensitive data, build artifacts, and system files from version control
+
+# ============================================
+# SENSITIVE DATA (CRITICAL - NEVER COMMIT)
+# ============================================
+
+# Environment variables (contains secrets, API keys, database credentials)
+.env
+.env.local
+.env.production
+.env.development
+.env.test.local
+.env.production.local
+.env.development.local
+*.env
+
+# Database files (contains personal employee data)
+backend/data/*.csv
+backend/data/*.db
+backend/data/*.sqlite
+backend/data/*.sqlite3
+
+# User-uploaded files (signatures and attachments contain PII)
+backend/data/signatures/
+backend/data/attachments/
+
+# Email configuration (may contain SMTP passwords)
+backend/data/email_settings.csv
+
+# Backup files (may contain sensitive data)
+*.bak
+*.backup
+*.sql
+*.dump
+
+# ============================================
+# PYTHON / BACKEND
+# ============================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.virtualenv/
+backend/venv/
+backend/env/
+
+# Python distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+
+# FastAPI / Uvicorn
+*.pid
+
+# ============================================
+# NODE.JS / REACT / FRONTEND
+# ============================================
+
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Testing
+/coverage
+
+# Production build
+/build
+/dist
+
+# Misc
+.DS_Store
+
+# Create React App
+.eslintcache
+
+# Vite (for future migration)
+.vite
+dist-ssr
+*.local
+
+# ============================================
+# IDE / EDITOR
+# ============================================
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Code assist history (contains conversation logs)
+code assist history/
+Gemin-chat-history.md
+*.vscdb
+
+# PyCharm / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ============================================
+# OPERATING SYSTEM
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ============================================
+# LOGS & TEMPORARY FILES
+# ============================================
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# ============================================
+# DEPLOYMENT & BUILD
+# ============================================
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# ============================================
+# MISC
+# ============================================
+
+# Large files
+*.zip
+*.tar.gz
+*.rar
+
+# ============================================
+# EXCEPTIONS (FORCE INCLUDE)
+# ============================================
+
+# Force include templates
+!backend/templates/
+!backend/templates/*.docx
+
+# Documentation (keep these)
+!CLAUDE.md
+!Gemini.md
+!Gemini-database.md
+!form-guide.md
+!README.md

@@ -1,0 +1,3 @@
+@echo off
+echo Starting Backend Server (Uvicorn)...
+python -m uvicorn backend.main:app --reload --host 0.0.0.0

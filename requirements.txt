@@ -1,0 +1,14 @@
+fastapi
+pydantic[email]
+uvicorn[standard]
+pandas
+python-multipart
+python-docx
+Pillow
+docxtpl
+jinja2
+hijri-converter
+python-jose[cryptography]
+passlib==1.7.4
+bcrypt==3.2.0
+python-dateutil
