@@ -42,27 +42,13 @@ export default function Dashboard() {
     return new Date(isoString).toLocaleTimeString(lang === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Determine attendance status display
-  let statusDisplay;
-  let statusColor;
-  
-  if (attendance?.status === "On Leave") {
-      statusDisplay = (
-        <span className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-orange-600"></span>
-            {t.onLeave || "On Leave"} ({t[attendance.vacation_type] || attendance.vacation_type})
-        </span>
-      );
-      statusColor = "text-orange-600";
-  } else {
-      statusDisplay = (
-        <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-green-600"></span>
-            {t.present || "Present"}
-        </span>
-      );
-      statusColor = "text-[#1e2c54]";
-  }
+  // Determine attendance status
+  const isOnLeave = attendance?.status === "On Leave";
+  const statusBgColor = isOnLeave ? "bg-orange-100" : "bg-green-100";
+  const statusTextColor = isOnLeave ? "text-orange-800" : "text-green-800";
+  const statusText = isOnLeave
+    ? `${t.onLeave || "On Leave"} (${t[attendance.vacation_type] || attendance.vacation_type})`
+    : t.present || "Present";
   
   const handleDownloadReport = async () => {
       try {
@@ -117,13 +103,13 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Attendance Widget - Simplified */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            {t.todaysAttendance || "Today's Attendance"}
+        {/* Status Widget - Colored Background */}
+        <div className={`${statusBgColor} p-3 rounded-xl shadow-sm border ${isOnLeave ? 'border-orange-200' : 'border-green-200'}`}>
+          <h3 className={`text-xs font-semibold uppercase tracking-wider mb-2 ${statusTextColor}`}>
+            {t.status || "Status"}
           </h3>
-          <div className="flex items-center justify-center">
-            {statusDisplay}
+          <div className={`text-center text-lg font-bold ${statusTextColor}`}>
+            {statusText}
           </div>
         </div>
 
@@ -156,38 +142,6 @@ export default function Dashboard() {
       {/* Timeline Calendar for Managers/Admins */}
       {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') && teamMembers.length > 0 && (
         <DashboardTimeline teamMembers={teamMembers} requests={requests} />
-      )}
-
-      {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'dean') && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-bold text-[#1e2c54]">{t.teamOverview}</h3>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {teamMembers.map(member => (
-              <div key={member.id} className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                   <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
-                     {(lang === 'ar' ? member.name_ar : member.name_en)?.charAt(0) || '?'}
-                   </div>
-                   <div>
-                     <div className="text-sm font-bold text-[#1e2c54]">{(lang === 'ar' ? member.name_ar : member.name_en) || 'User'}</div>
-                     <div className="text-xs text-gray-500">{(lang === 'ar' ? member.position_ar : member.position_en) || member.role || 'N/A'}</div>
-                   </div>
-                </div>
-                <div className="w-32 md:w-48">
-                   <div className="flex justify-between text-xs mb-1">
-                     <span className="font-medium text-gray-600">{t.balance}</span>
-                     <span className="font-bold text-blue-600">{member.balance || 0}</span>
-                   </div>
-                   <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div className="bg-[#0f5132] h-full rounded-full" style={{ width: `${((member.balance || 0) / ((member.balance || 0) + 0.1)) * 100}%` }}></div> 
-                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       )}
     </div>
   );
