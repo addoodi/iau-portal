@@ -10,14 +10,16 @@ services:
     expose:
       - "8000"
     volumes:
-      # IMPORTANT: When using Portainer Git deployment, these paths are relative to the repo
-      # Option 1: Use relative paths (data persists in cloned repo)
-      - ./backend/data:/app/backend/data
-      - ./backend/templates:/app/backend/templates
+      # Data storage - Choose one option:
 
-      # Option 2: Use absolute paths on your server (uncomment and edit):
-      # - ${DATA_PATH:-/opt/iau-portal/data}:/app/backend/data
-      # - ${TEMPLATES_PATH:-/opt/iau-portal/templates}:/app/backend/templates
+      # Option 1 (Default): Relative paths - data in stack directory
+      # Persists across rebuilds but may be lost on stack deletion
+      - ${DATA_PATH:-./backend/data}:/app/backend/data
+      - ${TEMPLATES_PATH:-./backend/templates}:/app/backend/templates
+
+      # Option 2: Set DATA_PATH and TEMPLATES_PATH environment variables
+      # for permanent storage independent of stack lifecycle
+      # Example: DATA_PATH=/opt/iau-portal/data
     environment:
       - PYTHONUNBUFFERED=1
     networks:
