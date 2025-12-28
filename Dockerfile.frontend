@@ -21,16 +21,28 @@ RUN npm install --legacy-peer-deps
 # Copy application source
 COPY . .
 
-# Build the application - let it show full error output
+# Build the application with detailed debugging
 RUN echo "========================================" && \
     echo "Starting Vite build..." && \
     echo "========================================" && \
-    npm run build --verbose
+    echo "Current directory:" && pwd && \
+    echo "Files present:" && ls -la && \
+    echo "" && \
+    echo "Running: npm run build" && \
+    npm run build 2>&1 || \
+    (echo "BUILD FAILED!" && \
+     echo "Checking what happened..." && \
+     ls -la && \
+     echo "Trying direct vite command..." && \
+     npx vite build 2>&1 && \
+     echo "If you see this, npm script is the problem" || \
+     echo "Vite build itself is failing")
 
 # Verify build output exists
 RUN echo "Checking build directory..." && \
-    ls -la build/ && \
-    echo "Build directory verified!"
+    ls -la && \
+    test -d build && echo "Build directory exists!" || \
+    (echo "Build directory NOT found!" && exit 1)
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
