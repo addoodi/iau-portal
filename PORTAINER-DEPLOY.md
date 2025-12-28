@@ -30,10 +30,53 @@ Complete guide for deploying IAU Portal using Docker and Portainer on your local
    - **Repository reference:** `refs/heads/main`
    - **Compose path:** `docker-compose.yml`
 
-4. **Environment Variables** (Optional)
-   Click "+ Add an environment variable" if needed:
+4. **Configure Advanced Settings** (Optional but Recommended)
+
+   **a) Environment Variables:**
+   Click "+ Add an environment variable" to customize:
    ```
    VITE_API_URL=http://your-server-ip:8000
+   ```
+   *(Change to your actual server IP and port)*
+
+   **b) Port Mapping:**
+   Click "Publish a new network port" to expose services:
+
+   **Backend:**
+   - Host: `8000` (or your preferred port like 8001)
+   - Container: `8000`
+
+   **Frontend:**
+   - Host: `3000` (or your preferred port like 3001)
+   - Container: `80`
+
+   *Example: Use port 8080 for frontend instead of 3000*
+
+   **c) Volume Mapping (Persistent Storage):**
+   Click "Add volume" to persist data on your local server:
+
+   **Backend Data Volume:**
+   - Container path: `/app/backend/data`
+   - Volume/Bind: Choose one option:
+     - **Bind mount** (recommended): `/opt/iau-portal/data` *(creates folder on host)*
+     - **Volume**: `iau-portal-data` *(Docker managed volume)*
+
+   **Backend Templates Volume:**
+   - Container path: `/app/backend/templates`
+   - Bind mount: `/opt/iau-portal/templates`
+
+   **Example Local Storage Setup:**
+   ```
+   Host Path                    → Container Path
+   /opt/iau-portal/data         → /app/backend/data
+   /opt/iau-portal/templates    → /app/backend/templates
+   ```
+
+   **Create directories on your server first:**
+   ```bash
+   sudo mkdir -p /opt/iau-portal/data
+   sudo mkdir -p /opt/iau-portal/templates
+   sudo chmod -R 755 /opt/iau-portal
    ```
 
 5. **Deploy**
@@ -69,8 +112,14 @@ services:
     container_name: iau-portal-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Change to 8001:8000 for custom port
     volumes:
+      # Option A: Use local server storage (recommended for easy backups)
+      # Uncomment these and comment out the named volumes below:
+      # - /opt/iau-portal/data:/app/backend/data
+      # - /opt/iau-portal/templates:/app/backend/templates
+
+      # Option B: Use Docker-managed volumes (default)
       - iau-data:/app/backend/data
       - iau-templates:/app/backend/templates
     environment:
@@ -90,7 +139,10 @@ services:
     container_name: iau-portal-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3000:80"  # Change to 8080:80 for custom port
+    environment:
+      # Uncomment and set if using custom backend port:
+      # - VITE_API_URL=http://your-server-ip:8001
     depends_on:
       - backend
     networks:
@@ -184,14 +236,123 @@ If your backend is on a different server or port:
    docker-compose up -d --build frontend
    ```
 
-### Persistent Data Location
+### Persistent Data Location (Local Storage Mapping)
 
-By default, CSV data is stored in Docker volumes. To use a specific directory:
+By default, CSV data is stored in Docker-managed volumes. For better control and easier backups, use **bind mounts** to map to specific directories on your server.
+
+#### Option 1: Using Bind Mounts (Recommended)
+
+**Step 1: Create directories on your server**
+```bash
+# Create data directories
+sudo mkdir -p /opt/iau-portal/data
+sudo mkdir -p /opt/iau-portal/templates
+
+# Set permissions
+sudo chmod -R 755 /opt/iau-portal
+
+# Optional: Copy existing templates
+sudo cp -r backend/templates/* /opt/iau-portal/templates/
+```
+
+**Step 2: Configure in Portainer**
+
+When deploying stack, add these volume mappings:
+
+| Container Path | Host Path (Your Server) | Purpose |
+|----------------|-------------------------|---------|
+| `/app/backend/data` | `/opt/iau-portal/data` | CSV files, signatures, attachments |
+| `/app/backend/templates` | `/opt/iau-portal/templates` | Document templates (.docx) |
+
+**In docker-compose.yml:**
+```yaml
+services:
+  backend:
+    volumes:
+      - /opt/iau-portal/data:/app/backend/data
+      - /opt/iau-portal/templates:/app/backend/templates
+```
+
+**In Portainer UI:**
+1. Stack Editor → Scroll to `backend` service → `volumes` section
+2. Change from:
+   ```yaml
+   volumes:
+     - iau-data:/app/backend/data
+   ```
+3. To:
+   ```yaml
+   volumes:
+     - /opt/iau-portal/data:/app/backend/data
+     - /opt/iau-portal/templates:/app/backend/templates
+   ```
+
+#### Option 2: Using Named Volumes (Default)
+
+Docker manages storage automatically:
 
 ```yaml
-backend:
-  volumes:
-    - /opt/iau-portal-data:/app/backend/data  # Your custom path
+volumes:
+  iau-data:
+    driver: local
+```
+
+**Find volume location:**
+```bash
+docker volume inspect iau-portal_iau-data
+# Look for "Mountpoint" in output
+```
+
+#### Port Mapping Examples
+
+**Custom ports in Portainer:**
+
+1. **Frontend on port 8080:**
+   ```yaml
+   frontend:
+     ports:
+       - "8080:80"
+   ```
+   Access at: `http://your-server:8080`
+
+2. **Backend on port 8001:**
+   ```yaml
+   backend:
+     ports:
+       - "8001:8000"
+   ```
+   Access at: `http://your-server:8001`
+
+3. **Both on custom ports:**
+   ```yaml
+   services:
+     backend:
+       ports:
+         - "8001:8000"
+     frontend:
+       ports:
+         - "8080:80"
+       environment:
+         - VITE_API_URL=http://your-server-ip:8001
+   ```
+
+#### Verify Storage Setup
+
+```bash
+# Check data is being written to your local path
+ls -la /opt/iau-portal/data/
+
+# Should show:
+# - employees.csv
+# - users.csv
+# - leave_requests.csv
+# - signatures/
+# - attachments/
+
+# Check templates
+ls -la /opt/iau-portal/templates/
+# Should show:
+# - vacation_template.docx
 ```
 
 ---
