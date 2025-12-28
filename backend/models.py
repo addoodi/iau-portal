@@ -159,6 +159,8 @@ class DashboardReportRequest(BaseModel):
     filter_type: str  # 'ytd', 'custom', 'last_30', 'last_60', 'last_90', 'full_year'
     start_date: Optional[str] = None  # YYYY-MM-DD for custom range
     end_date: Optional[str] = None  # YYYY-MM-DD for custom range
+    language: str = 'en'  # 'en' or 'ar'
+    date_system: str = 'gregorian'  # 'gregorian' or 'hijri'
 
 class TeamMemberStats(BaseModel):
     name_en: str

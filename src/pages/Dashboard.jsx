@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardTimeline from '../components/DashboardTimeline';
 
 export default function Dashboard() {
-  const { user, employees, requests, t, lang, attendance, loading, formatDate } = usePortal();
+  const { user, employees, requests, t, lang, attendance, loading, formatDate, dateSystem } = usePortal();
   const navigate = useNavigate();
 
   // Report filter state
@@ -72,6 +72,8 @@ export default function Dashboard() {
     try {
       const filterData = {
         filter_type: reportFilter,
+        language: lang,
+        date_system: dateSystem,
         ...(reportFilter === 'custom' && {
           start_date: customStartDate,
           end_date: customEndDate

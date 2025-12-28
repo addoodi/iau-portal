@@ -378,7 +378,10 @@ def download_dashboard_report(
         'period_start': period_start.strftime("%Y-%m-%d"),
         'period_end': period_end.strftime("%Y-%m-%d"),
         'period_leaves_taken': used_balance,
-        'period_requests_count': len(my_requests)
+        'period_requests_count': len(my_requests),
+        # Language and date system preferences
+        'language': filter_request.language,
+        'date_system': filter_request.date_system
     }
 
     # Fetch Team Data if Manager/Admin - with period stats
@@ -408,13 +411,22 @@ def download_dashboard_report(
                 approved_in_period = [r for r in member_requests_in_period if r.status == 'Approved']
                 total_leaves_taken = sum(r.duration for r in approved_in_period)
 
-                # Calculate leaves by type
+                # Calculate leaves by type with details
                 leaves_by_type = {}
+                leaves_details = []  # List of leave details with dates
                 for r in approved_in_period:
                     if r.vacation_type in leaves_by_type:
                         leaves_by_type[r.vacation_type] += r.duration
                     else:
                         leaves_by_type[r.vacation_type] = r.duration
+
+                    # Add detailed leave information
+                    leaves_details.append({
+                        'type': r.vacation_type,
+                        'start_date': r.start_date,
+                        'end_date': r.end_date,
+                        'duration': r.duration
+                    })
 
                 # Check current status - if on leave today
                 from datetime import date as dt_date
@@ -433,10 +445,12 @@ def download_dashboard_report(
                     'name_en': f"{emp.first_name_en} {emp.last_name_en}",
                     'name_ar': f"{emp.first_name_ar} {emp.last_name_ar}",
                     'position_en': emp.position_en,
+                    'position_ar': emp.position_ar,
                     'vacation_balance': emp.vacation_balance,
                     'total_leaves_taken': total_leaves_taken,
                     'current_status': current_status,
-                    'leaves_by_type': leaves_by_type
+                    'leaves_by_type': leaves_by_type,
+                    'leaves_details': leaves_details
                 })
         data['team_data'] = team_members
 

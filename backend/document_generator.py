@@ -4,6 +4,8 @@ from docx.shared import Cm, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from io import BytesIO
 import os
+from datetime import datetime
+from hijri_converter import Gregorian
 
 def create_vacation_form(context):
     """
@@ -37,49 +39,230 @@ def create_vacation_form(context):
     
     return file_stream
 
+# Report translations
+REPORT_TRANSLATIONS = {
+    'en': {
+        'title': 'Employee Dashboard Report',
+        'report_period': 'Report Period',
+        'period': 'Period',
+        'date_range': 'Date Range',
+        'to': 'to',
+        'employee_profile': 'Employee Profile',
+        'name': 'Name',
+        'position': 'Position',
+        'email': 'Email',
+        'unit': 'Unit',
+        'total_vacation_balance': 'Total Vacation Balance',
+        'earned': 'Earned',
+        'used': 'Used',
+        'available': 'Available',
+        'period_statistics': 'Period Statistics',
+        'leaves_taken_in_period': 'Leaves Taken in Period',
+        'requests_in_period': 'Requests in Period',
+        'days': 'days',
+        'contract_status': 'Contract Status',
+        'contract_end_date': 'Contract End Date',
+        'days_remaining': 'Days Remaining',
+        'expiring_soon': '(Expiring Soon)',
+        'todays_attendance': "Today's Attendance",
+        'status': 'Status',
+        'leave_requests_in_period': 'Leave Requests in Period',
+        'recent_leave_requests': 'Recent Leave Requests',
+        'type': 'Type',
+        'start_date': 'Start Date',
+        'end_date': 'End Date',
+        'duration': 'Duration',
+        'no_leave_requests': 'No leave requests in this period.',
+        'team_overview': 'Team Overview',
+        'team_summary': 'Team Summary:',
+        'total_members': 'Total Members',
+        'currently_on_leave': 'Currently On Leave',
+        'total_leaves_taken_in_period': 'Total Leaves Taken in Period',
+        'average_available_balance': 'Average Available Balance',
+        'employee_name': 'Employee Name',
+        'available_balance': 'Available Balance',
+        'leaves_in_period': 'Leaves in Period',
+        'current_status': 'Current Status',
+        'leave_types_breakdown': 'Leave Types Breakdown',
+        'Annual': 'Annual Leave',
+        'Sick': 'Sick Leave',
+        'Emergency': 'Emergency Leave',
+        'Present': 'Present',
+        'On Leave': 'On Leave',
+        'ytd': 'YEAR TO DATE',
+        'last_30': 'LAST 30 DAYS',
+        'last_60': 'LAST 60 DAYS',
+        'last_90': 'LAST 90 DAYS',
+        'full_year': 'FULL CONTRACT YEAR',
+        'custom': 'CUSTOM RANGE'
+    },
+    'ar': {
+        'title': 'تقرير لوحة القيادة للموظف',
+        'report_period': 'فترة التقرير',
+        'period': 'الفترة',
+        'date_range': 'النطاق الزمني',
+        'to': 'إلى',
+        'employee_profile': 'الملف الشخصي للموظف',
+        'name': 'الاسم',
+        'position': 'المسمى الوظيفي',
+        'email': 'البريد الإلكتروني',
+        'unit': 'الوحدة',
+        'total_vacation_balance': 'رصيد الإجازات الكلي',
+        'earned': 'المستحق',
+        'used': 'المستخدم',
+        'available': 'المتوفر',
+        'period_statistics': 'إحصائيات الفترة',
+        'leaves_taken_in_period': 'الإجازات المأخوذة في الفترة',
+        'requests_in_period': 'الطلبات في الفترة',
+        'days': 'أيام',
+        'contract_status': 'حالة العقد',
+        'contract_end_date': 'تاريخ انتهاء العقد',
+        'days_remaining': 'الأيام المتبقية',
+        'expiring_soon': '(قرب الانتهاء)',
+        'todays_attendance': 'حضور اليوم',
+        'status': 'الحالة',
+        'leave_requests_in_period': 'طلبات الإجازة في الفترة',
+        'recent_leave_requests': 'طلبات الإجازة الأخيرة',
+        'type': 'النوع',
+        'start_date': 'تاريخ البداية',
+        'end_date': 'تاريخ النهاية',
+        'duration': 'المدة',
+        'no_leave_requests': 'لا توجد طلبات إجازة في هذه الفترة.',
+        'team_overview': 'نظرة عامة على الفريق',
+        'team_summary': 'ملخص الفريق:',
+        'total_members': 'إجمالي الأعضاء',
+        'currently_on_leave': 'حالياً في إجازة',
+        'total_leaves_taken_in_period': 'إجمالي الإجازات المأخوذة في الفترة',
+        'average_available_balance': 'متوسط الرصيد المتوفر',
+        'employee_name': 'اسم الموظف',
+        'available_balance': 'الرصيد المتوفر',
+        'leaves_in_period': 'الإجازات في الفترة',
+        'current_status': 'الحالة الحالية',
+        'leave_types_breakdown': 'تفصيل أنواع الإجازات',
+        'Annual': 'إجازة اعتيادية',
+        'Sick': 'إجازة مرضية',
+        'Emergency': 'إجازة طارئة',
+        'Present': 'حاضر',
+        'On Leave': 'في إجازة',
+        'ytd': 'من بداية السنة حتى الآن',
+        'last_30': 'آخر 30 يوماً',
+        'last_60': 'آخر 60 يوماً',
+        'last_90': 'آخر 90 يوماً',
+        'full_year': 'سنة العقد الكاملة',
+        'custom': 'فترة مخصصة'
+    }
+}
+
+def format_date_for_report(date_str, date_system='gregorian', language='en'):
+    """
+    Format a date string according to the specified calendar system and language.
+
+    Args:
+        date_str: Date string in YYYY-MM-DD format
+        date_system: 'gregorian' or 'hijri'
+        language: 'en' or 'ar'
+
+    Returns:
+        Formatted date string
+    """
+    try:
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+
+        if date_system == 'hijri':
+            # Convert to Hijri
+            hijri_date = Gregorian(date_obj.year, date_obj.month, date_obj.day).to_hijri()
+
+            hijri_months_ar = [
+                'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة',
+                'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
+            ]
+            hijri_months_en = [
+                'Muharram', 'Safar', 'Rabi\' al-Awwal', 'Rabi\' al-Thani',
+                'Jumada al-Awwal', 'Jumada al-Thani', 'Rajab', 'Sha\'ban',
+                'Ramadan', 'Shawwal', 'Dhul-Qi\'dah', 'Dhul-Hijjah'
+            ]
+
+            month_name = hijri_months_ar[hijri_date.month - 1] if language == 'ar' else hijri_months_en[hijri_date.month - 1]
+
+            if language == 'ar':
+                return f"{hijri_date.day} {month_name} {hijri_date.year} هـ"
+            else:
+                return f"{month_name} {hijri_date.day}, {hijri_date.year} AH"
+        else:
+            # Gregorian
+            if language == 'ar':
+                locale = 'ar-SA'
+            else:
+                locale = 'en-US'
+
+            # Format using month name
+            month_names_ar = [
+                'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+                'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+            ]
+            month_names_en = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ]
+
+            month_name = month_names_ar[date_obj.month - 1] if language == 'ar' else month_names_en[date_obj.month - 1]
+
+            if language == 'ar':
+                return f"{date_obj.day} {month_name} {date_obj.year} م"
+            else:
+                return f"{month_name} {date_obj.day}, {date_obj.year}"
+    except Exception as e:
+        return date_str
+
 def create_dashboard_report(data):
     """
-    Generates a comprehensive dashboard report.
-    data: dict containing user, balance, contract, attendance info, and period filters.
+    Generates a comprehensive dashboard report with full language and calendar support.
+    data: dict containing user, balance, contract, attendance info, period filters, language, and date_system.
     """
+    # Get language and date system preferences
+    language = data.get('language', 'en')
+    date_system = data.get('date_system', 'gregorian')
+    t = REPORT_TRANSLATIONS[language]
+
     doc = Document()
 
     # Title
-    heading = doc.add_heading('Employee Dashboard Report', 0)
+    heading = doc.add_heading(t['title'], 0)
     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     # Period Information (if provided)
     if 'filter_type' in data and 'period_start' in data and 'period_end' in data:
-        doc.add_heading('Report Period', level=1)
+        doc.add_heading(t['report_period'], level=1)
         p = doc.add_paragraph()
-        filter_type_display = data['filter_type'].replace('_', ' ').upper()
-        p.add_run('Period: ').bold = True
+        filter_type_key = data['filter_type']
+        filter_type_display = t.get(filter_type_key, filter_type_key.replace('_', ' ').upper())
+        p.add_run(f"{t['period']}: ").bold = True
         p.add_run(f"{filter_type_display}\n")
-        p.add_run('Date Range: ').bold = True
-        p.add_run(f"{data['period_start']} to {data['period_end']}")
+        p.add_run(f"{t['date_range']}: ").bold = True
+        period_start_formatted = format_date_for_report(data['period_start'], date_system, language)
+        period_end_formatted = format_date_for_report(data['period_end'], date_system, language)
+        p.add_run(f"{period_start_formatted} {t['to']} {period_end_formatted}")
 
     # Employee Info
-    doc.add_heading('Employee Profile', level=1)
+    doc.add_heading(t['employee_profile'], level=1)
     p = doc.add_paragraph()
-    p.add_run('Name (EN): ').bold = True
-    p.add_run(f"{data['name_en']}\n")
-    p.add_run('Name (AR): ').bold = True
-    p.add_run(f"{data['name_ar']}\n")
-    p.add_run('Position: ').bold = True
-    p.add_run(f"{data['position_en']} / {data['position_ar']}\n")
-    p.add_run('Email: ').bold = True
+    p.add_run(f"{t['name']}: ").bold = True
+    p.add_run(f"{data['name_ar'] if language == 'ar' else data['name_en']}\n")
+    p.add_run(f"{t['position']}: ").bold = True
+    p.add_run(f"{data['position_ar'] if language == 'ar' else data['position_en']}\n")
+    p.add_run(f"{t['email']}: ").bold = True
     p.add_run(f"{data['email']}\n")
-    p.add_run('Unit: ').bold = True
-    p.add_run(f"{data['unit_en']} / {data['unit_ar']}")
+    p.add_run(f"{t['unit']}: ").bold = True
+    p.add_run(f"{data['unit_ar'] if language == 'ar' else data['unit_en']}")
 
     # Vacation Balance (Total)
-    doc.add_heading('Total Vacation Balance', level=1)
+    doc.add_heading(t['total_vacation_balance'], level=1)
     table = doc.add_table(rows=1, cols=3)
     table.style = 'Table Grid'
     hdr_cells = table.rows[0].cells
-    hdr_cells[0].text = 'Earned'
-    hdr_cells[1].text = 'Used'
-    hdr_cells[2].text = 'Available'
+    hdr_cells[0].text = t['earned']
+    hdr_cells[1].text = t['used']
+    hdr_cells[2].text = t['available']
 
     row_cells = table.add_row().cells
     row_cells[0].text = str(data['balance_earned'])
@@ -88,58 +271,60 @@ def create_dashboard_report(data):
 
     # Period Statistics (if provided)
     if 'period_leaves_taken' in data:
-        doc.add_heading('Period Statistics', level=1)
+        doc.add_heading(t['period_statistics'], level=1)
         p = doc.add_paragraph()
-        p.add_run('Leaves Taken in Period: ').bold = True
-        p.add_run(f"{data['period_leaves_taken']} days\n")
-        p.add_run('Requests in Period: ').bold = True
+        p.add_run(f"{t['leaves_taken_in_period']}: ").bold = True
+        p.add_run(f"{data['period_leaves_taken']} {t['days']}\n")
+        p.add_run(f"{t['requests_in_period']}: ").bold = True
         p.add_run(f"{data['period_requests_count']}")
 
     # Contract Status
-    doc.add_heading('Contract Status', level=1)
+    doc.add_heading(t['contract_status'], level=1)
     p = doc.add_paragraph()
-    p.add_run('Contract End Date: ').bold = True
-    p.add_run(f"{data['contract_end_date']}\n")
-    p.add_run('Days Remaining: ').bold = True
+    p.add_run(f"{t['contract_end_date']}: ").bold = True
+    contract_end_formatted = format_date_for_report(data['contract_end_date'], date_system, language) if data['contract_end_date'] != 'N/A' else data['contract_end_date']
+    p.add_run(f"{contract_end_formatted}\n")
+    p.add_run(f"{t['days_remaining']}: ").bold = True
 
     days_run = p.add_run(f"{data['days_remaining']}")
     if data['days_remaining'] <= 40:
         days_run.font.color.rgb = RGBColor(255, 0, 0)
-        p.add_run(' (Expiring Soon)').font.color.rgb = RGBColor(255, 0, 0)
+        p.add_run(f" {t['expiring_soon']}").font.color.rgb = RGBColor(255, 0, 0)
 
     # Attendance
-    doc.add_heading('Today\'s Attendance', level=1)
+    doc.add_heading(t['todays_attendance'], level=1)
     p = doc.add_paragraph()
-    p.add_run('Status: ').bold = True
-    p.add_run(f"{data['attendance_status']}")
+    p.add_run(f"{t['status']}: ").bold = True
+    status_text = t.get(data['attendance_status'], data['attendance_status'])
+    p.add_run(f"{status_text}")
 
     # Requests in Period
-    requests_heading = 'Leave Requests in Period' if 'filter_type' in data else 'Recent Leave Requests'
+    requests_heading = t['leave_requests_in_period'] if 'filter_type' in data else t['recent_leave_requests']
     doc.add_heading(requests_heading, level=1)
     if data['requests']:
         req_table = doc.add_table(rows=1, cols=5)
         req_table.style = 'Table Grid'
         hdr = req_table.rows[0].cells
-        hdr[0].text = 'Type'
-        hdr[1].text = 'Start Date'
-        hdr[2].text = 'End Date'
-        hdr[3].text = 'Duration'
-        hdr[4].text = 'Status'
+        hdr[0].text = t['type']
+        hdr[1].text = t['start_date']
+        hdr[2].text = t['end_date']
+        hdr[3].text = t['duration']
+        hdr[4].text = t['status']
 
         for req in data['requests']:
             row = req_table.add_row().cells
-            row[0].text = req['vacation_type']
-            row[1].text = req['start_date']
-            row[2].text = req['end_date']
-            row[3].text = f"{req['duration']} days"
-            row[4].text = req['status']
+            row[0].text = t.get(req['vacation_type'], req['vacation_type'])
+            row[1].text = format_date_for_report(req['start_date'], date_system, language)
+            row[2].text = format_date_for_report(req['end_date'], date_system, language)
+            row[3].text = f"{req['duration']} {t['days']}"
+            row[4].text = t.get(req['status'], req['status'])
     else:
-        doc.add_paragraph("No leave requests in this period.")
+        doc.add_paragraph(t['no_leave_requests'])
 
     # Team Overview (For Managers/Admins)
     if 'team_data' in data and data['team_data']:
         doc.add_page_break()
-        doc.add_heading('Team Overview', level=1)
+        doc.add_heading(t['team_overview'], level=1)
 
         # Summary statistics
         if data['team_data']:
@@ -148,12 +333,12 @@ def create_dashboard_report(data):
             on_leave_count = sum(1 for m in data['team_data'] if m.get('current_status') == 'On Leave')
 
             p = doc.add_paragraph()
-            p.add_run('Team Summary:\n').bold = True
-            p.add_run(f"Total Members: {len(data['team_data'])}\n")
-            p.add_run(f"Currently On Leave: {on_leave_count}\n")
+            p.add_run(f"{t['team_summary']}\n").bold = True
+            p.add_run(f"{t['total_members']}: {len(data['team_data'])}\n")
+            p.add_run(f"{t['currently_on_leave']}: {on_leave_count}\n")
             if 'filter_type' in data:
-                p.add_run(f"Total Leaves Taken in Period: {total_team_leaves} days\n")
-            p.add_run(f"Average Available Balance: {avg_balance:.1f} days")
+                p.add_run(f"{t['total_leaves_taken_in_period']}: {total_team_leaves} {t['days']}\n")
+            p.add_run(f"{t['average_available_balance']}: {avg_balance:.1f} {t['days']}")
 
             doc.add_paragraph()  # Spacing
 
@@ -161,31 +346,50 @@ def create_dashboard_report(data):
         team_table = doc.add_table(rows=1, cols=5)
         team_table.style = 'Table Grid'
         hdr = team_table.rows[0].cells
-        hdr[0].text = 'Employee Name'
-        hdr[1].text = 'Position'
-        hdr[2].text = 'Available Balance'
-        hdr[3].text = 'Leaves in Period'
-        hdr[4].text = 'Current Status'
+        hdr[0].text = t['employee_name']
+        hdr[1].text = t['position']
+        hdr[2].text = t['available_balance']
+        hdr[3].text = t['leaves_in_period']
+        hdr[4].text = t['current_status']
 
         for member in data['team_data']:
             row = team_table.add_row().cells
-            row[0].text = f"{member['name_en']} / {member['name_ar']}"
-            row[1].text = member.get('position_en', 'N/A')
-            row[2].text = f"{member.get('vacation_balance', 0)} days"
-            row[3].text = f"{member.get('total_leaves_taken', 0)} days"
-            row[4].text = member.get('current_status', 'Present')
+            member_name = member['name_ar'] if language == 'ar' else member['name_en']
+            member_position = member.get('position_ar' if language == 'ar' else 'position_en', 'N/A')
+            row[0].text = member_name
+            row[1].text = member_position
+            row[2].text = f"{member.get('vacation_balance', 0)} {t['days']}"
+            row[3].text = f"{member.get('total_leaves_taken', 0)} {t['days']}"
+            row[4].text = t.get(member.get('current_status', 'Present'), member.get('current_status', 'Present'))
 
-        # Leave type breakdown (if available)
-        has_leave_types = any(member.get('leaves_by_type') for member in data['team_data'])
-        if has_leave_types:
+        # Leave details breakdown with dates (if available)
+        has_leave_details = any(member.get('leaves_details') for member in data['team_data'])
+        if has_leave_details:
             doc.add_paragraph()
-            doc.add_heading('Leave Types Breakdown', level=2)
+            doc.add_heading(t['leave_types_breakdown'], level=2)
             for member in data['team_data']:
-                if member.get('leaves_by_type'):
+                if member.get('leaves_details'):
+                    member_name = member['name_ar'] if language == 'ar' else member['name_en']
                     p = doc.add_paragraph()
-                    p.add_run(f"{member['name_en']}: ").bold = True
-                    leave_types_str = ", ".join([f"{type_}: {days} days" for type_, days in member['leaves_by_type'].items()])
-                    p.add_run(leave_types_str)
+                    p.add_run(f"{member_name}:").bold = True
+
+                    # Create a table for this member's leave details
+                    leave_table = doc.add_table(rows=1, cols=4)
+                    leave_table.style = 'Table Grid'
+                    leave_hdr = leave_table.rows[0].cells
+                    leave_hdr[0].text = t['type']
+                    leave_hdr[1].text = t['start_date']
+                    leave_hdr[2].text = t['end_date']
+                    leave_hdr[3].text = t['duration']
+
+                    for leave in member['leaves_details']:
+                        leave_row = leave_table.add_row().cells
+                        leave_row[0].text = t.get(leave['type'], leave['type'])
+                        leave_row[1].text = format_date_for_report(leave['start_date'], date_system, language)
+                        leave_row[2].text = format_date_for_report(leave['end_date'], date_system, language)
+                        leave_row[3].text = f"{leave['duration']} {t['days']}"
+
+                    doc.add_paragraph()  # Spacing between members
 
     file_stream = BytesIO()
     doc.save(file_stream)
