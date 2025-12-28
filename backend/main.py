@@ -31,6 +31,11 @@ app.add_middleware(
 def read_root():
     return {"message": "Welcome to the IAU Portal API"}
 
+@app.get("/api/health")
+def health_check():
+    """Health check endpoint for Docker and monitoring"""
+    return {"status": "healthy", "service": "iau-portal-api"}
+
 # --- Setup Endpoints ---
 @app.get("/api/setup/status")
 def setup_status(user_service: UserService = Depends(get_user_service)):

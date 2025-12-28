@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+
+# Development files
+.git/
+.gitignore
+.env
+.env.local
+.env.development
+.env.production
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation (not needed in container)
+*.md
+DEPLOYMENT.md
+VITE_MIGRATION_PLAN.md
+CLAUDE.md
+
+# Testing
+.pytest_cache/
+coverage/
+*.coverage
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude Code specific
+.claude/
+
+# Don't ignore these important files
+!requirements.txt
+!package.json
+!package-lock.json

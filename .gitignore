@@ -203,8 +203,7 @@ temp/
 # DEPLOYMENT & BUILD
 # ============================================
 
-# Docker
-.dockerignore
+# Docker (keep .dockerignore in version control)
 docker-compose.override.yml
 .docker/
 
