@@ -21,8 +21,6 @@ services:
       # - ${TEMPLATES_PATH:-/opt/iau-portal/templates}:/app/backend/templates
     environment:
       - PYTHONUNBUFFERED=1
-    networks:
-      - iau-network
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/health')"]
       interval: 30s
@@ -47,18 +45,12 @@ services:
       - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
-    networks:
-      - iau-network
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 5s
-
-networks:
-  iau-network:
-    driver: bridge
 
 # Optional: Add this if you want to use named volumes instead
 # volumes:
