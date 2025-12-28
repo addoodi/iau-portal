@@ -1,9 +1,6 @@
-// Determine API URL dynamically based on environment or current window location.
-// Priority: 1) VITE_API_URL env variable, 2) Dynamic hostname detection
-const hostname = window.location.hostname;
-export const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : `http://${hostname}:8000/api`;
+// API URL uses relative path - nginx will proxy /api to backend
+// This eliminates CORS issues and port configuration complexity
+export const API_BASE_URL = '/api';
 
 // A utility to get the token from localStorage
 const getToken = () => {
