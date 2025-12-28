@@ -18,8 +18,21 @@ RUN npm install --legacy-peer-deps
 # Copy application source
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application with verbose logging
+RUN echo "========================================" && \
+    echo "Starting Vite build..." && \
+    echo "========================================" && \
+    npm run build --verbose 2>&1 | tee /build.log || \
+    (echo "" && \
+     echo "========================================" && \
+     echo "BUILD FAILED - Error details:" && \
+     echo "========================================" && \
+     cat /build.log && \
+     echo "" && \
+     echo "Attempting to identify the issue..." && \
+     echo "Last 50 lines of output:" && \
+     tail -50 /build.log && \
+     exit 1)
 
 # Verify build output exists
 RUN ls -la build/ || (echo "Build directory not found!" && exit 1)
