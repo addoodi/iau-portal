@@ -30,47 +30,31 @@ Complete guide for deploying IAU Portal using Docker and Portainer on your local
    - **Repository reference:** `refs/heads/main`
    - **Compose path:** `docker-compose.yml`
 
-4. **Environment Variables** (REQUIRED if using custom ports)
+4. **Environment Variables** (Optional - Only if changing default port)
 
-   **CRITICAL:** When using Git repository method, port and volume mappings are defined in `docker-compose.yml`, NOT in Portainer UI. You MUST set environment variables to customize ports.
+   **NEW:** The application now uses nginx as a reverse proxy! This means:
+   - ✅ No CORS issues
+   - ✅ No port configuration needed
+   - ✅ Single port for entire application
+   - ✅ Backend API accessible through frontend port
 
-   Click **"+ Add an environment variable"** to configure:
+   Click **"+ Add an environment variable"** only if you want to change the port:
 
-   | Variable | Default | Required? | Purpose | Example |
-   |----------|---------|-----------|---------|---------|
-   | `BACKEND_PORT` | 8000 | Optional | Backend host port | 8099 |
-   | `FRONTEND_PORT` | 3000 | Optional | Frontend host port | 8098 |
-   | `VITE_API_URL` | auto (port 8000) | **YES if custom backend port** | Backend API URL | `http://192.168.1.100:8099` |
+   | Variable | Default | Purpose | Example |
+   |----------|---------|---------|---------|
+   | `FRONTEND_PORT` | 3000 | Port to access the application | 8080 |
 
-   **⚠️ IMPORTANT:** If you change `BACKEND_PORT` from 8000, you MUST also set `VITE_API_URL` or the frontend won't connect!
+   **That's it!** No `BACKEND_PORT` or `VITE_API_URL` needed anymore.
 
-   **Example Configuration (custom ports 8099/8098):**
+   **Example - Use port 8098 instead of default 3000:**
    ```
-   BACKEND_PORT=8099
    FRONTEND_PORT=8098
-   VITE_API_URL=http://YOUR_SERVER_IP:8099
    ```
-   Replace `YOUR_SERVER_IP` with your actual server IP address.
 
-   **Common Scenarios:**
-
-   **a) Default ports (no customization needed):**
-   - Don't add any environment variables
-   - Access: Frontend `http://your-server:3000`, Backend `http://your-server:8000`
-
-   **b) Custom ports (8080 for frontend, 8001 for backend):**
-   ```
-   FRONTEND_PORT=8080
-   BACKEND_PORT=8001
-   VITE_API_URL=http://your-server-ip:8001
-   ```
-   - Access: Frontend `http://your-server:8080`, Backend `http://your-server:8001`
-
-   **c) Access from other devices on network:**
-   ```
-   VITE_API_URL=http://192.168.1.100:8000
-   ```
-   (Replace with your actual server IP)
+   **Access URLs:**
+   - Frontend & API: `http://your-server-ip:3000` (or your custom FRONTEND_PORT)
+   - API endpoints: `http://your-server-ip:3000/api/...`
+   - Backend is NOT directly accessible (proxied through nginx)
 
 5. **Data Storage Location** (Important!)
 
