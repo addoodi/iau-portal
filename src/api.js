@@ -1,6 +1,10 @@
-// API URL uses relative path - nginx will proxy /api to backend
-// This eliminates CORS issues and port configuration complexity
-export const API_BASE_URL = '/api';
+// API URL configuration
+// - In production (Docker): Uses relative path /api (nginx proxies to backend)
+// - In development: Uses http://localhost:8000/api (direct backend connection)
+const isDevelopment = window.location.port === '3000' || window.location.port === '5173';
+export const API_BASE_URL = isDevelopment
+  ? 'http://localhost:8000/api'
+  : '/api';
 
 // A utility to get the token from localStorage
 const getToken = () => {
