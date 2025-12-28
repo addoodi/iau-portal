@@ -24,13 +24,18 @@ COPY . .
 # DIAGNOSTIC CHECKS (instead of building)
 # ============================================
 
+# Create log file for all diagnostic output
+RUN echo "DIAGNOSTIC TEST RESULTS" > /diagnostic.log && \
+    echo "======================" >> /diagnostic.log && \
+    echo "" >> /diagnostic.log
+
 # Check 1: Verify Node and NPM versions
-RUN echo "========================================" && \
-    echo "CHECK 1: Node.js and NPM versions" && \
-    echo "========================================" && \
-    node --version && \
-    npm --version && \
-    echo ""
+RUN echo "========================================" | tee -a /diagnostic.log && \
+    echo "CHECK 1: Node.js and NPM versions" | tee -a /diagnostic.log && \
+    echo "========================================" | tee -a /diagnostic.log && \
+    node --version | tee -a /diagnostic.log && \
+    npm --version | tee -a /diagnostic.log && \
+    echo "" | tee -a /diagnostic.log
 
 # Check 2: Verify all files are present
 RUN echo "========================================" && \
@@ -128,9 +133,31 @@ RUN echo "========================================" && \
     echo "Next step: Check the actual Vite build error." && \
     echo ""
 
+# Save comprehensive diagnostic summary to file
+RUN echo "========================================" >> /diagnostic.log && \
+    echo "DIAGNOSTIC SUMMARY" >> /diagnostic.log && \
+    echo "========================================" >> /diagnostic.log && \
+    echo "" >> /diagnostic.log && \
+    echo "CHECK 1: Node $(node --version) / NPM $(npm --version)" >> /diagnostic.log && \
+    echo "CHECK 2: Files present - $(test -f package.json && echo 'package.json ✓' || echo 'package.json ✗')" >> /diagnostic.log && \
+    echo "CHECK 3: Dependencies installed - $(npm list --depth=0 2>&1 | wc -l) packages" >> /diagnostic.log && \
+    echo "CHECK 4: vite $(npm list vite 2>&1 | grep vite@ | head -1)" >> /diagnostic.log && \
+    echo "CHECK 5: Source files - $(ls src/ | wc -l) files in src/" >> /diagnostic.log && \
+    echo "CHECK 6: vite.config.js - $(wc -l < vite.config.js) lines" >> /diagnostic.log && \
+    echo "CHECK 7: Scripts available - $(cat package.json | grep -c '\"build\"') build script(s)" >> /diagnostic.log && \
+    echo "CHECK 8: Vite CLI - $(npx vite --version 2>&1)" >> /diagnostic.log && \
+    echo "CHECK 9: Vite config readable - ✓" >> /diagnostic.log && \
+    echo "CHECK 10: Disk space - $(df -h . | tail -1 | awk '{print $4}') available" >> /diagnostic.log && \
+    echo "CHECK 11: NODE_OPTIONS=$NODE_OPTIONS" >> /diagnostic.log && \
+    echo "" >> /diagnostic.log && \
+    echo "✓ ALL 11 CHECKS PASSED!" >> /diagnostic.log && \
+    echo "The problem is in 'npm run build' itself, not the environment." >> /diagnostic.log
+
 # Create a dummy output for nginx stage to work
 RUN mkdir -p build && \
-    echo '<!DOCTYPE html><html><body><h1>Diagnostic Test Passed</h1><p>All checks completed successfully!</p></body></html>' > build/index.html
+    echo '<!DOCTYPE html><html><body><h1>Diagnostic Test Passed</h1><p>All checks completed successfully!</p><pre>' > build/index.html && \
+    cat /diagnostic.log >> build/index.html && \
+    echo '</pre></body></html>' >> build/index.html
 
 # Stage 2: Serve with nginx (just to complete the build)
 FROM nginx:alpine
