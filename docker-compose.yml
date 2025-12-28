@@ -33,6 +33,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      no_cache: true  # Force rebuild when environment variables change
       args:
         # Backend URL - IMPORTANT: Set this to your server's IP and backend port
         # This is used by the browser, not the container
