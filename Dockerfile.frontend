@@ -4,40 +4,60 @@
 # Stage 1: Build
 FROM node:18-alpine AS builder
 
-# Install git (sometimes needed for npm dependencies)
+# Install git and increase memory for Node
 RUN apk add --no-cache git
+
+# Set Node memory limit (helps with large builds)
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 WORKDIR /app
 
-# Copy everything first (simplest approach)
-COPY . .
-
-# Clean any existing node_modules and build artifacts
-RUN rm -rf node_modules build dist
+# Copy package files first for better caching
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm install --legacy-peer-deps
 
-# Build the application
-RUN npm run build
+# Copy rest of application
+COPY . .
+
+# Clean any existing build artifacts (but not node_modules we just installed)
+RUN rm -rf build dist
+
+# Show environment info for debugging
+RUN echo "==== BUILD ENVIRONMENT ====" && \
+    echo "Node version: $(node --version)" && \
+    echo "NPM version: $(npm --version)" && \
+    echo "Working directory: $(pwd)" && \
+    echo "Files present:" && ls -la && \
+    echo "============================"
+
+# Build the application with verbose output
+RUN echo "Starting Vite build..." && \
+    npm run build -- --logLevel info || \
+    (echo "==== BUILD FAILED ====" && \
+     echo "Checking for build errors..." && \
+     npm run build 2>&1 | tee build-error.log && \
+     echo "==== Build Error Log ====" && \
+     cat build-error.log && \
+     echo "==== Directory Contents ====" && \
+     ls -laR && \
+     exit 1)
 
 # Verify build succeeded and output directory exists
 RUN if [ ! -d "build" ]; then \
-        echo "==== BUILD OUTPUT DIRECTORY NOT FOUND ====" && \
+        echo "==== ERROR: Build directory not created ====" && \
         echo "Expected: /app/build" && \
-        echo "Checking what directories exist:" && \
+        echo "Directories that exist:" && \
         ls -la && \
-        echo "==== Content of package.json ====" && \
-        cat package.json && \
-        echo "==== Content of vite.config.js ====" && \
-        cat vite.config.js && \
         exit 1; \
     fi
 
 # Show what was built
 RUN echo "==== BUILD SUCCESSFUL ====" && \
-    echo "Contents of build directory:" && \
-    ls -la build/
+    echo "Build directory contents:" && \
+    ls -la build/ && \
+    du -sh build/
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
