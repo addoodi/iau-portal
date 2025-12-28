@@ -34,8 +34,9 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        # Backend URL - change to your server IP if accessing from other devices
-        # Example: VITE_API_URL=http://192.168.1.100:8000
+        # Backend URL - IMPORTANT: Set this to your server's IP and backend port
+        # This is used by the browser, not the container
+        # Example: VITE_API_URL=http://192.168.1.100:8099
         - VITE_API_URL=${VITE_API_URL:-}
     container_name: iau-portal-frontend
     restart: unless-stopped

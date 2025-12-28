@@ -30,24 +30,27 @@ Complete guide for deploying IAU Portal using Docker and Portainer on your local
    - **Repository reference:** `refs/heads/main`
    - **Compose path:** `docker-compose.yml`
 
-4. **Environment Variables** (Optional - Customize Ports/Settings)
+4. **Environment Variables** (REQUIRED if using custom ports)
 
-   **IMPORTANT:** When using Git repository method, port and volume mappings are defined in `docker-compose.yml`, NOT in Portainer UI. You can customize them using environment variables.
+   **CRITICAL:** When using Git repository method, port and volume mappings are defined in `docker-compose.yml`, NOT in Portainer UI. You MUST set environment variables to customize ports.
 
-   Click **"+ Add an environment variable"** to customize:
+   Click **"+ Add an environment variable"** to configure:
 
-   | Variable | Default | Purpose | Example |
-   |----------|---------|---------|---------|
-   | `BACKEND_PORT` | 8000 | Backend host port | 8001 |
-   | `FRONTEND_PORT` | 3000 | Frontend host port | 8080 |
-   | `VITE_API_URL` | auto-detect | Backend URL for API | `http://192.168.1.100:8000` |
+   | Variable | Default | Required? | Purpose | Example |
+   |----------|---------|-----------|---------|---------|
+   | `BACKEND_PORT` | 8000 | Optional | Backend host port | 8099 |
+   | `FRONTEND_PORT` | 3000 | Optional | Frontend host port | 8098 |
+   | `VITE_API_URL` | auto (port 8000) | **YES if custom backend port** | Backend API URL | `http://192.168.1.100:8099` |
 
-   **Example Configuration:**
+   **⚠️ IMPORTANT:** If you change `BACKEND_PORT` from 8000, you MUST also set `VITE_API_URL` or the frontend won't connect!
+
+   **Example Configuration (custom ports 8099/8098):**
    ```
-   BACKEND_PORT=8000
-   FRONTEND_PORT=3000
-   VITE_API_URL=http://192.168.1.100:8000
+   BACKEND_PORT=8099
+   FRONTEND_PORT=8098
+   VITE_API_URL=http://YOUR_SERVER_IP:8099
    ```
+   Replace `YOUR_SERVER_IP` with your actual server IP address.
 
    **Common Scenarios:**
 
