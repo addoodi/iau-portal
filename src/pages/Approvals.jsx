@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CheckCircle, AlertTriangle, Paperclip } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 import { API_BASE_URL } from '../api';
+import TeamCalendar from '../components/TeamCalendar';
 
 export default function Approvals() {
   const { user, employees, requests, updateRequestStatus, t, isRTL, formatDate } = usePortal();
@@ -159,6 +160,16 @@ export default function Approvals() {
           })
         )}
       </div>
+
+      {/* Team Calendar */}
+      {pendingRequests.length > 0 && (
+        <div className="mt-6">
+          <TeamCalendar
+            teamMembers={employees.filter(e => teamEmployeeIds.includes(e.id))}
+            requests={requests}
+          />
+        </div>
+      )}
     </div>
   );
 }

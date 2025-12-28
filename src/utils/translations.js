@@ -116,7 +116,10 @@ export const TRANSLATIONS = {
     attachment: "Attachment",
     uploadDocument: "Upload Document (Optional)",
     viewAttachment: "View Attachment",
-    noAttachment: "No Attachment"
+    noAttachment: "No Attachment",
+    teamCalendar: "Team Availability Calendar",
+    employee: "Employee",
+    weekend: "Weekend"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -235,6 +238,9 @@ export const TRANSLATIONS = {
     attachment: "مرفق",
     uploadDocument: "رفع مستند (اختياري)",
     viewAttachment: "عرض المرفق",
-    noAttachment: "لا يوجد مرفق"
+    noAttachment: "لا يوجد مرفق",
+    teamCalendar: "جدول توفر الفريق",
+    employee: "الموظف",
+    weekend: "عطلة نهاية الأسبوع"
   }
 };

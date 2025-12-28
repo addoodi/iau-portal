@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileDown, Clock, CheckCircle, LogIn, LogOut, AlertTriangle } from 'lucide-react';
+import { FileDown, CheckCircle, LogIn, LogOut, AlertTriangle } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 import { downloadDashboardReport } from '../api';
 
@@ -89,31 +89,21 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Attendance Widget */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-4">
-             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">{t.todaysAttendance || "Today's Attendance"}</h3>
-             {statusDisplay}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">
+            {t.todaysAttendance || "Today's Attendance"}
+          </h3>
+
+          {/* Centered Status Badge */}
+          <div className="flex items-center justify-center my-8">
+            {statusDisplay}
           </div>
-          
-          <div className="flex items-center justify-center my-6">
-             <div className="text-center">
-                 <div className="text-4xl font-bold mb-2 flex items-center justify-center gap-3">
-                     <Clock size={32} className="text-gray-300"/>
-                     <span className={statusColor}>
-                        {new Date().toLocaleTimeString(lang === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
-                     </span>
-                 </div>
-                 <div className="text-sm text-gray-400">
-                    {formatDate(new Date(), { weekday: 'long' })}
-                 </div>
-             </div>
-          </div>
-          
+
           <div className="bg-gray-50 p-3 rounded-lg text-center text-xs text-gray-500">
-              {attendance?.status === "On Leave" ? 
-                 (t.enjoyVacation || "Enjoy your vacation!") : 
-                 (t.autoAttendanceMessage || "Attendance is automatically recorded based on your schedule.")
-              }
+            {attendance?.status === "On Leave" ?
+              (t.enjoyVacation || "Enjoy your vacation!") :
+              (t.autoAttendanceMessage || "Attendance is automatically recorded based on your schedule.")
+            }
           </div>
         </div>
 

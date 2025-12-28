@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from datetime import datetime, date
 from .password import verify_password, get_password_hash, verify_password_raw
 from .calculation import calculate_vacation_balance, get_current_contract_period
+from .image_utils import optimize_signature_image
 import base64
 import os
 import shutil
@@ -16,6 +17,10 @@ from email.message import EmailMessage
 # Directory for attachments
 ATTACHMENTS_DIR = Path("backend/data/attachments")
 os.makedirs(ATTACHMENTS_DIR, exist_ok=True)
+
+# Directory for signatures
+SIGNATURES_DIR = Path("backend/data/signatures")
+os.makedirs(SIGNATURES_DIR, exist_ok=True)
 
 def save_attachment(file_content: bytes, filename: str, employee_id: str) -> str:
     """Saves a file to the attachments directory and returns its path."""
@@ -231,31 +236,20 @@ class EmployeeService:
         if not employee:
             raise Exception("Employee profile not found")
 
-        # Decode base64 image
-        try:
-            format, imgstr = base64_image.split(';base64,') 
-            ext = format.split('/')[-1]
-            if ext not in ['png', 'jpg', 'jpeg']:
-                raise Exception("Invalid image format. Only PNG, JPG, JPEG are allowed.")
-        except ValueError:
-             # Try to handle cases where prefix is missing or different
-             imgstr = base64_image
-             ext = 'png' # Default or try to detect? 
-             # For now assume if split fails, it might be raw base64 or invalid.
-             # Let's keep it simple: require standard data URI scheme or handle raw.
-             pass
-        
-        # Security: Use UUID for filename to prevent overwriting or directory traversal
-        filename = f"{employee.id}_signature.{ext}"
-        file_path = ATTACHMENTS_DIR / filename
-        
+        # Optimize signature image
+        optimized_bytes = optimize_signature_image(base64_image, max_width=600)
+
+        # Save as PNG (optimization always outputs PNG)
+        filename = f"{employee.id}_signature.png"
+        file_path = SIGNATURES_DIR / filename
+
         with open(file_path, "wb") as f:
-            f.write(base64.b64decode(imgstr))
-        
+            f.write(optimized_bytes)
+
         # Update employee record
         employee.signature_path = str(file_path)
         self.employee_repository.update(employee)
-        
+
         return str(file_path)
 
 class LeaveRequestService:

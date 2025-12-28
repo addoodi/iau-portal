@@ -19,12 +19,12 @@ def create_vacation_form(context):
     
     # Handle Signatures
     if context.get('employee_signature_path') and os.path.exists(context.get('employee_signature_path')):
-        context['employee_signature'] = InlineImage(doc, context['employee_signature_path'], width=Cm(4))
+        context['employee_signature'] = InlineImage(doc, context['employee_signature_path'], width=Cm(3.5))
     else:
         context['employee_signature'] = ''
 
     if context.get('manager_signature_path') and os.path.exists(context.get('manager_signature_path')):
-        context['manager_signature'] = InlineImage(doc, context['manager_signature_path'], width=Cm(4))
+        context['manager_signature'] = InlineImage(doc, context['manager_signature_path'], width=Cm(3.5))
     else:
         context['manager_signature'] = ''
 
