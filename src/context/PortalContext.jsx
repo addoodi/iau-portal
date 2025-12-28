@@ -286,12 +286,14 @@ export const PortalProvider = ({ children }) => {
     return await apiInitializeAdmin(adminData);
   };
 
+  const isHijri = dateSystem === 'hijri';
+
   return (
     <PortalContext.Provider value={{
       user, users, employees, requests, units, attendance, lang, t, isRTL, loading, error,
       setLang, login, logout, createRequest, updateRequestStatus, uploadSignature, deleteSignature,
       initializeAdmin, refreshData, addUnit, editUnit, deleteUser,
-      dateSystem, toggleDateSystem, formatDate
+      dateSystem, toggleDateSystem, formatDate, isHijri
     }}>
       {children}
     </PortalContext.Provider>

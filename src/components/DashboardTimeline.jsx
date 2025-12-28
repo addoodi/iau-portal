@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
-import { convertToHijri } from '../utils/hijriUtils';
+import { convertToHijri, getHijriMonthNames } from '../utils/hijriUtils';
 
 export default function DashboardTimeline({ teamMembers, requests }) {
   const { t, lang, isHijri } = usePortal();
@@ -97,11 +97,8 @@ export default function DashboardTimeline({ teamMembers, requests }) {
   const getMonthName = () => {
     if (isHijri) {
       const hijriDate = convertToHijri(currentDate);
-      const hijriMonths = {
-        ar: ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'],
-        en: ['Muharram', 'Safar', 'Rabi\' al-Awwal', 'Rabi\' al-Thani', 'Jumada al-Awwal', 'Jumada al-Thani', 'Rajab', 'Sha\'ban', 'Ramadan', 'Shawwal', 'Dhul-Qi\'dah', 'Dhul-Hijjah']
-      };
-      return `${hijriMonths[lang][hijriDate.month - 1]} ${hijriDate.year}`;
+      const hijriMonths = getHijriMonthNames(lang);
+      return `${hijriMonths[hijriDate.month - 1]} ${hijriDate.year}`;
     }
     return currentDate.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', { month: 'long', year: 'numeric' });
   };
