@@ -24,7 +24,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend.debug
+      dockerfile: Dockerfile.frontend
       no_cache: true
       args:
         - VITE_API_URL=${VITE_API_URL:-}

@@ -1,8 +1,6 @@
 # Frontend Dockerfile - React + Vite Application
-FROM node:18-alpine AS builder
-
-# Force rebuild - version 2
-RUN echo "Build version 2"
+# Using Node 20 for Vite 7.3.0 compatibility (requires Node 20.19+)
+FROM node:20-alpine AS builder
 
 # Install git (needed for some npm packages)
 RUN apk add --no-cache git
@@ -21,28 +19,11 @@ RUN npm install --legacy-peer-deps
 # Copy application source
 COPY . .
 
-# Build the application with detailed debugging
-RUN echo "========================================" && \
-    echo "Starting Vite build..." && \
-    echo "========================================" && \
-    echo "Current directory:" && pwd && \
-    echo "Files present:" && ls -la && \
-    echo "" && \
-    echo "Running: npm run build" && \
-    npm run build 2>&1 || \
-    (echo "BUILD FAILED!" && \
-     echo "Checking what happened..." && \
-     ls -la && \
-     echo "Trying direct vite command..." && \
-     npx vite build 2>&1 && \
-     echo "If you see this, npm script is the problem" || \
-     echo "Vite build itself is failing")
+# Build the application
+RUN npm run build
 
 # Verify build output exists
-RUN echo "Checking build directory..." && \
-    ls -la && \
-    test -d build && echo "Build directory exists!" || \
-    (echo "Build directory NOT found!" && exit 1)
+RUN ls -la build/
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
