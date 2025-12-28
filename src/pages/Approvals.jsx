@@ -10,6 +10,7 @@ export default function Approvals() {
   const [rejectingRequestId, setRejectingRequestId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectError, setRejectError] = useState('');
+  const [processingRequestId, setProcessingRequestId] = useState(null);
 
   // "user" in context is the Employee profile (after refreshData), so user.id is "IAU-XXX".
   // user.role comes from the User account.
@@ -49,6 +50,21 @@ export default function Approvals() {
     setRejectingRequestId(null);
     setRejectionReason('');
     setRejectError('');
+  };
+
+  const handleApprove = async (reqId) => {
+    setProcessingRequestId(reqId);
+    try {
+      const success = await updateRequestStatus(reqId, 'Approved');
+      if (!success) {
+        alert(t.approveFailed || 'Failed to approve request. Please try again.');
+      }
+    } catch (error) {
+      console.error("Approve error:", error);
+      alert(t.approveFailed || 'Failed to approve request. Please try again.');
+    } finally {
+      setProcessingRequestId(null);
+    }
   };
 
   const getAttachmentUrl = (req) => {
@@ -150,8 +166,20 @@ export default function Approvals() {
                      </div>
                    ) : (
                      <>
-                       <button onClick={() => handleRejectClick(req.id)} className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors">{t.reject || 'Reject'}</button>
-                       <button onClick={() => updateRequestStatus(req.id, 'Approved')} className="px-4 py-2 text-sm font-medium text-white bg-[#0f5132] rounded-md hover:bg-[#0b3d26] transition-colors">{t.approve || 'Approve'}</button>
+                       <button
+                         onClick={() => handleRejectClick(req.id)}
+                         disabled={processingRequestId === req.id}
+                         className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                         {t.reject || 'Reject'}
+                       </button>
+                       <button
+                         onClick={() => handleApprove(req.id)}
+                         disabled={processingRequestId === req.id}
+                         className="px-4 py-2 text-sm font-medium text-white bg-[#0f5132] rounded-md hover:bg-[#0b3d26] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                         {processingRequestId === req.id ? (t.approving || 'Approving...') : (t.approve || 'Approve')}
+                       </button>
                      </>
                    )}
                 </div>

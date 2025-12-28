@@ -141,7 +141,9 @@ export const TRANSLATIONS = {
     fullYear: "Full Contract Year",
     custom: "Custom Range",
     downloadReport: "Download Report",
-    reportDownloadFailed: "Failed to download report"
+    reportDownloadFailed: "Failed to download report",
+    approving: "Approving...",
+    approveFailed: "Failed to approve request"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -284,6 +286,8 @@ export const TRANSLATIONS = {
     fullYear: "سنة العقد الكاملة",
     custom: "فترة مخصصة",
     downloadReport: "تحميل التقرير",
-    reportDownloadFailed: "فشل تحميل التقرير"
+    reportDownloadFailed: "فشل تحميل التقرير",
+    approving: "جاري الاعتماد...",
+    approveFailed: "فشل اعتماد الطلب"
   }
 };
