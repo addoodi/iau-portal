@@ -16,7 +16,11 @@
       "Bash(npm uninstall:*)",
       "Bash(npm start)",
       "Bash(python -m uvicorn:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(dir:*)",
+      "Bash(git restore:*)",
+      "Bash(did not complete successfully: exit code: 1\"\n\nThe build will now:\n✅ Install dependencies successfully\n✅ Handle peer dependency warnings gracefully\n✅ Build the frontend application\n✅ Create optimized production bundle\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(ls:*)"
     ]
   }
 }

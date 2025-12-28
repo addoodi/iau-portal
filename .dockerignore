@@ -1,4 +1,4 @@
-# Dependencies
+# Dependencies (will be reinstalled in container)
 node_modules/
 venv/
 __pycache__/
@@ -7,7 +7,7 @@ __pycache__/
 *.pyd
 .Python
 
-# Build outputs
+# Build outputs (will be regenerated)
 build/
 dist/
 *.egg-info/
@@ -15,10 +15,11 @@ dist/
 # Development files
 .git/
 .gitignore
-.env
 .env.local
 .env.development
-.env.production
+.env.test
+
+# Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -32,10 +33,12 @@ yarn-error.log*
 *~
 
 # Documentation (not needed in container)
-*.md
+README.md
 DEPLOYMENT.md
 VITE_MIGRATION_PLAN.md
 CLAUDE.md
+DOCKER-README.md
+PORTAINER-DEPLOY.md
 
 # Testing
 .pytest_cache/
@@ -49,7 +52,14 @@ Thumbs.db
 # Claude Code specific
 .claude/
 
-# Don't ignore these important files
-!requirements.txt
+# Docker files (not needed inside container)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# IMPORTANT: Keep these files
 !package.json
 !package-lock.json
+!requirements.txt
+!.env.production
+!.env.example

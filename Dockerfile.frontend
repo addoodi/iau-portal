@@ -4,39 +4,26 @@
 # Stage 1: Build
 FROM node:18-alpine AS builder
 
+# Install git (sometimes needed for npm dependencies)
+RUN apk add --no-cache git
+
 WORKDIR /app
 
-# Set npm to use legacy peer deps (avoids conflicts)
-RUN npm config set legacy-peer-deps true
-
-# Copy package files first (for better caching)
-COPY package.json package-lock.json ./
+# Copy everything first (simplest approach)
+COPY . .
 
 # Install dependencies
-# Using npm install instead of npm ci for better Docker compatibility
-RUN npm install
-
-# Copy configuration files
-COPY vite.config.js ./
-COPY tailwind.config.js ./
-COPY postcss.config.js ./
-COPY index.html ./
-
-# Copy source code and public assets
-COPY src/ ./src/
-COPY public/ ./public/
+RUN npm install --legacy-peer-deps
 
 # Build the application
-# VITE_API_URL can be set via build args
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
-
-# Debug: Show what files we have before building
-RUN echo "Files in /app:" && ls -la && \
-    echo "Files in /app/src:" && ls -la src/
-
-# Build with error output
-RUN npm run build || (echo "Build failed! Contents:" && ls -la && cat package.json && exit 1)
+# Don't set VITE_API_URL here - it will be set at runtime
+RUN npm run build 2>&1 | tee build.log || \
+    (echo "==== BUILD FAILED ====" && \
+     echo "Build log:" && cat build.log && \
+     echo "==== Files in /app ====" && ls -laR && \
+     echo "==== package.json ====" && cat package.json && \
+     echo "==== vite.config.js ====" && cat vite.config.js && \
+     exit 1)
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
