@@ -269,99 +269,44 @@ export const downloadRequestForm = async (requestId) => {
 
 
 
-    export const downloadDashboardReport = async () => {
+export const downloadDashboardReport = async (filterData = { filter_type: 'ytd' }) => {
+    const token = getToken();
 
+    const response = await fetch(`${API_BASE_URL}/reports/dashboard`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify(filterData),
+    });
 
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Network error' }));
+        throw new Error(errorData.detail || 'Failed to download report');
+    }
 
-        const token = getToken();
-
-
-
-        const response = await fetch(`${API_BASE_URL}/reports/dashboard`, {
-
-
-
-            headers: {
-
-
-
-                ...(token && { 'Authorization': `Bearer ${token}` }),
-
-
-
-            },
-
-
-
-        });
-
-
-
-    
-
-
-
-        if (!response.ok) {
-
-
-
-            const errorData = await response.json().catch(() => ({ detail: 'Network error' }));
-
-
-
-            throw new Error(errorData.detail || 'Failed to download report');
-
-
-
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get('content-disposition');
+    let filename = `dashboard-report-${new Date().toISOString().split('T')[0]}.docx`;
+    if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch && filenameMatch.length > 1) {
+            filename = filenameMatch[1];
         }
+    }
 
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
 
-
-    
-
-
-
-        const blob = await response.blob();
-
-
-
-        const url = window.URL.createObjectURL(blob);
-
-
-
-        const a = document.createElement('a');
-
-
-
-        a.href = url;
-
-
-
-        a.download = `dashboard-report-${new Date().toISOString().split('T')[0]}.docx`;
-
-
-
-        document.body.appendChild(a);
-
-
-
-        a.click();
-
-
-
-        a.remove();
-
-
-
-        window.URL.revokeObjectURL(url);
-
-
-
-        return true;
-
-
-
-    };
+    return true;
+};
 
 
 
