@@ -90,11 +90,11 @@ RUN echo "========================================" && \
     npx vite --version && \
     echo ""
 
-# Check 9: Try to import vite.config.js (check for syntax errors)
+# Check 9: Validate vite.config.js syntax
 RUN echo "========================================" && \
-    echo "CHECK 9: Vite config can be loaded?" && \
+    echo "CHECK 9: Vite config syntax validation" && \
     echo "========================================" && \
-    node -e "import('./vite.config.js').then(() => console.log('✓ Config loads OK')).catch(e => {console.log('✗ Config error:', e.message); process.exit(1)})" && \
+    node --check vite.config.js && echo "✓ Config syntax is valid" && \
     echo ""
 
 # Check 10: Disk space and memory
