@@ -1,6 +1,6 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from dateutil.relativedelta import relativedelta
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from .models import Employee, LeaveRequest
 
 def get_current_contract_period(start_date: date, today: date) -> Tuple[date, date]:
@@ -102,3 +102,55 @@ def calculate_vacation_balance(employee: Employee, all_approved_requests: List[L
             total_used += req.duration
 
     return round(max(0.0, earned_balance - total_used), 2)
+
+def calculate_date_range(filter_type: str, start_date_str: Optional[str] = None,
+                        end_date_str: Optional[str] = None,
+                        contract_start: Optional[date] = None) -> Tuple[date, date]:
+    """
+    Calculate date range based on filter type.
+
+    Args:
+        filter_type: One of 'ytd', 'last_30', 'last_60', 'last_90', 'full_year', 'custom'
+        start_date_str: Custom start date (YYYY-MM-DD) for 'custom' filter
+        end_date_str: Custom end date (YYYY-MM-DD) for 'custom' filter
+        contract_start: Employee contract start date for 'full_year' filter
+
+    Returns:
+        Tuple of (start_date, end_date)
+    """
+    today = date.today()
+
+    if filter_type == 'ytd':
+        # Year to date: Jan 1 to today
+        return date(today.year, 1, 1), today
+
+    elif filter_type == 'last_30':
+        return today - timedelta(days=30), today
+
+    elif filter_type == 'last_60':
+        return today - timedelta(days=60), today
+
+    elif filter_type == 'last_90':
+        return today - timedelta(days=90), today
+
+    elif filter_type == 'full_year':
+        # Full contract year (11 months)
+        if contract_start:
+            contract_period_start, contract_period_end = get_current_contract_period(contract_start, today)
+            return contract_period_start, contract_period_end
+        else:
+            # Fallback to calendar year if no contract start provided
+            return date(today.year, 1, 1), today
+
+    elif filter_type == 'custom':
+        if start_date_str and end_date_str:
+            start = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            return start, end
+        else:
+            # Fallback to last 30 days if custom dates not provided
+            return today - timedelta(days=30), today
+
+    else:
+        # Default to last 30 days
+        return today - timedelta(days=30), today

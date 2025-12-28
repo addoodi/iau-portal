@@ -153,3 +153,17 @@ class EmailSettingsUpdate(BaseModel):
     smtp_password: Optional[str] = None # Plain password for update, will be hashed
     sender_email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
+
+# Dashboard Report Models
+class DashboardReportRequest(BaseModel):
+    filter_type: str  # 'ytd', 'custom', 'last_30', 'last_60', 'last_90', 'full_year'
+    start_date: Optional[str] = None  # YYYY-MM-DD for custom range
+    end_date: Optional[str] = None  # YYYY-MM-DD for custom range
+
+class TeamMemberStats(BaseModel):
+    name_en: str
+    name_ar: str
+    total_leaves_taken: int
+    vacation_balance: float
+    current_status: str  # 'Present', 'On Leave'
+    leaves_by_type: dict  # {'Annual': 5, 'Sick': 2, 'Emergency': 1}

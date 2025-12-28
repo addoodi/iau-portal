@@ -8,12 +8,13 @@ import os
 from datetime import datetime, timedelta
 from hijri_converter import Gregorian
 
-from .models import User, UserCreate, LeaveRequest, Employee, EmployeeWithBalance, EmployeeCreate, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UserPasswordUpdate, UnitCreate, UnitUpdate, AttendanceLog, SignatureUpload, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate
+from .models import User, UserCreate, LeaveRequest, Employee, EmployeeWithBalance, EmployeeCreate, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UserPasswordUpdate, UnitCreate, UnitUpdate, AttendanceLog, SignatureUpload, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate, DashboardReportRequest, TeamMemberStats
 from .repositories import CSVUserRepository, CSVEmployeeRepository, CSVLeaveRequestRepository
 from .services import UserService, EmployeeService, LeaveRequestService, UnitService, AttendanceService, EmailSettingsService, save_attachment
 from .document_generator import create_vacation_form, create_dashboard_report
 from .auth import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from .dependencies import get_user_service, get_employee_service, get_leave_request_service, get_unit_service, get_attendance_service, get_email_settings_service
+from .calculation import calculate_date_range
 
 app = FastAPI(title="IAU Portal API", version="0.1.0")
 
@@ -302,8 +303,9 @@ def get_today_attendance_status(attendance_service: AttendanceService = Depends(
                                 current_user: User = Depends(get_current_user)):
     return attendance_service.get_today_status(current_user.id)
 
-@app.get("/api/reports/dashboard")
+@app.post("/api/reports/dashboard")
 def download_dashboard_report(
+    filter_request: DashboardReportRequest,
     employee_service: EmployeeService = Depends(get_employee_service),
     leave_request_service: LeaveRequestService = Depends(get_leave_request_service),
     unit_service: UnitService = Depends(get_unit_service),
@@ -319,18 +321,40 @@ def download_dashboard_report(
         units = unit_service.get_units()
         unit = next((u for u in units if u.id == employee.unit_id), None)
 
+    # Calculate date range based on filter
+    emp_start_date = datetime.strptime(employee.start_date, "%Y-%m-%d").date()
+    period_start, period_end = calculate_date_range(
+        filter_request.filter_type,
+        filter_request.start_date,
+        filter_request.end_date,
+        emp_start_date
+    )
+
     all_requests = leave_request_service.get_leave_requests()
-    my_requests = [r for r in all_requests if r.employee_id == employee.id]
-    
+
+    # Filter my requests by date range
+    my_requests = []
+    for r in all_requests:
+        if r.employee_id == employee.id:
+            req_start = datetime.strptime(r.start_date, "%Y-%m-%d").date()
+            req_end = datetime.strptime(r.end_date, "%Y-%m-%d").date()
+            # Include if there's any overlap with the period
+            if req_start <= period_end and req_end >= period_start:
+                my_requests.append(r)
+
     # Sort requests by date desc
     my_requests.sort(key=lambda x: x.start_date, reverse=True)
-    recent_requests = [r.dict() for r in my_requests[:5]]
+    recent_requests = [r.dict() for r in my_requests[:10]]  # Show up to 10 requests in period
 
-    # Balance calc
-    approved_requests = [r for r in all_requests if r.status == 'Approved' and r.employee_id == employee.id]
-    used_balance = sum(r.duration for r in approved_requests) 
-    earned_balance = round(employee.vacation_balance + used_balance, 2)
-    
+    # Balance calc - period specific
+    approved_requests_in_period = [r for r in my_requests if r.status == 'Approved']
+    used_balance = sum(r.duration for r in approved_requests_in_period)
+
+    # Total balance calculations (not period-specific)
+    all_approved = [r for r in all_requests if r.status == 'Approved' and r.employee_id == employee.id]
+    total_used = sum(r.duration for r in all_approved)
+    earned_balance = round(employee.vacation_balance + total_used, 2)
+
     attendance_status = attendance_service.get_today_status(current_user.id)
 
     data = {
@@ -342,21 +366,27 @@ def download_dashboard_report(
         'unit_en': unit.name_en if unit else "N/A",
         'unit_ar': unit.name_ar if unit else "N/A",
         'balance_available': employee.vacation_balance,
-        'balance_used': used_balance,
+        'balance_used': total_used,
         'balance_earned': earned_balance,
         'contract_end_date': employee.contract_end_date or "N/A",
         'days_remaining': employee.days_remaining_in_contract if employee.days_remaining_in_contract is not None else 0,
         'attendance_status': attendance_status['status'],
         'requests': recent_requests,
-        'team_data': []
+        'team_data': [],
+        # Period-specific data
+        'filter_type': filter_request.filter_type,
+        'period_start': period_start.strftime("%Y-%m-%d"),
+        'period_end': period_end.strftime("%Y-%m-%d"),
+        'period_leaves_taken': used_balance,
+        'period_requests_count': len(my_requests)
     }
 
-    # Fetch Team Data if Manager/Admin
+    # Fetch Team Data if Manager/Admin - with period stats
     if current_user.role in ['manager', 'admin', 'dean']:
         all_employees = employee_service.get_employees()
         team_members = []
         for emp in all_employees:
-            # Admin/Dean sees all (except self, maybe? or all). Manager sees direct reports.
+            # Admin/Dean sees all (except self). Manager sees direct reports.
             is_team_member = False
             if current_user.role == 'manager':
                 if emp.manager_id == employee.id:
@@ -364,22 +394,61 @@ def download_dashboard_report(
             elif current_user.role in ['admin', 'dean']:
                 if emp.id != employee.id: # Exclude self
                     is_team_member = True
-            
+
             if is_team_member:
+                # Calculate period-specific stats for this member
+                member_requests_in_period = []
+                for r in all_requests:
+                    if r.employee_id == emp.id:
+                        req_start = datetime.strptime(r.start_date, "%Y-%m-%d").date()
+                        req_end = datetime.strptime(r.end_date, "%Y-%m-%d").date()
+                        if req_start <= period_end and req_end >= period_start:
+                            member_requests_in_period.append(r)
+
+                approved_in_period = [r for r in member_requests_in_period if r.status == 'Approved']
+                total_leaves_taken = sum(r.duration for r in approved_in_period)
+
+                # Calculate leaves by type
+                leaves_by_type = {}
+                for r in approved_in_period:
+                    if r.vacation_type in leaves_by_type:
+                        leaves_by_type[r.vacation_type] += r.duration
+                    else:
+                        leaves_by_type[r.vacation_type] = r.duration
+
+                # Check current status - if on leave today
+                from datetime import date as dt_date
+                today = dt_date.today()
+                on_leave_today = False
+                for r in all_requests:
+                    if r.employee_id == emp.id and r.status == 'Approved':
+                        req_start = datetime.strptime(r.start_date, "%Y-%m-%d").date()
+                        req_end = datetime.strptime(r.end_date, "%Y-%m-%d").date()
+                        if req_start <= today <= req_end:
+                            on_leave_today = True
+                            break
+                current_status = 'On Leave' if on_leave_today else 'Present'
+
                 team_members.append({
                     'name_en': f"{emp.first_name_en} {emp.last_name_en}",
                     'name_ar': f"{emp.first_name_ar} {emp.last_name_ar}",
                     'position_en': emp.position_en,
-                    'vacation_balance': emp.vacation_balance
+                    'vacation_balance': emp.vacation_balance,
+                    'total_leaves_taken': total_leaves_taken,
+                    'current_status': current_status,
+                    'leaves_by_type': leaves_by_type
                 })
         data['team_data'] = team_members
-    
+
     file_stream = create_dashboard_report(data)
-    
+
+    # Create filename with date range
+    filename = f"dashboard_report_{period_start.strftime('%Y%m%d')}_{period_end.strftime('%Y%m%d')}.docx"
+
     return StreamingResponse(
         file_stream,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f"attachment; filename=dashboard_report.docx"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
 # --- Email Settings Endpoints ---
