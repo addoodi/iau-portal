@@ -76,7 +76,7 @@ export default function DashboardTimeline({ teamMembers, requests }) {
 
     let bgClass = 'bg-white';
     if (weekend) bgClass = 'bg-gray-100';
-    if (status?.status === 'Approved') bgClass = 'bg-red-100';
+    if (status?.status === 'Approved') bgClass = 'bg-green-100';
     if (status?.status === 'Pending') bgClass = 'bg-yellow-100';
 
     const borderClass = today ? 'border-2 border-blue-500' : 'border border-gray-200';
@@ -132,15 +132,15 @@ export default function DashboardTimeline({ teamMembers, requests }) {
       {/* Legend */}
       <div className="p-3 border-b border-gray-100 flex items-center gap-4 text-xs bg-gray-50">
         <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-red-100 border border-gray-200 rounded"></div>
+          <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
           <span className="text-gray-600">{t.approved || "Approved"}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-yellow-100 border border-gray-200 rounded"></div>
+          <div className="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded"></div>
           <span className="text-gray-600">{t.pending || "Pending"}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-gray-100 border border-gray-200 rounded"></div>
+          <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
           <span className="text-gray-600">{t.weekend || "Weekend"}</span>
         </div>
         <div className="flex items-center gap-1">
