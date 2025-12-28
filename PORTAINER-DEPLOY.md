@@ -108,80 +108,60 @@ Complete guide for deploying IAU Portal using Docker and Portainer on your local
 
 ### Method 2: Deploy via Portainer Web Editor
 
-**Good if you want to customize the compose file**
+**Use this if you want to edit the docker-compose.yml directly in Portainer**
+
+**IMPORTANT:** This method is the same as Method 1, but allows editing the compose file. You're still building from source (NOT pulling pre-built images).
 
 1. **Open Portainer** → **Stacks** → **"+ Add stack"**
 
 2. **Name:** `iau-portal`
 
-3. **Build method:** Select **"Web editor"**
+3. **Build method:** Select **"Repository"**
 
-4. **Paste this docker-compose configuration:**
+4. **Repository settings:**
+   ```
+   Repository URL: https://github.com/addoodi/iau-portal
+   Reference: refs/heads/main
+   Compose path: docker-compose.yml
 
-```yaml
-version: '3.8'
+   Repository authentication: ON
+   Username: addoodi
+   Personal access token: [your-token]
+   ```
 
-services:
-  # Backend - FastAPI
-  backend:
-    image: ghcr.io/addoodi/iau-portal-backend:latest
-    container_name: iau-portal-backend
-    restart: unless-stopped
-    ports:
-      - "8000:8000"  # Change to 8001:8000 for custom port
-    volumes:
-      # Option A: Use local server storage (recommended for easy backups)
-      # Uncomment these and comment out the named volumes below:
-      # - /opt/iau-portal/data:/app/backend/data
-      # - /opt/iau-portal/templates:/app/backend/templates
+5. **Click "Show advanced options"** → **"Editor"**
 
-      # Option B: Use Docker-managed volumes (default)
-      - iau-data:/app/backend/data
-      - iau-templates:/app/backend/templates
-    environment:
-      - PYTHONUNBUFFERED=1
-    networks:
-      - iau-network
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
+6. **The docker-compose.yml from your repo will be shown** - you can now edit it directly if needed
 
-  # Frontend - React + Vite
-  frontend:
-    image: ghcr.io/addoodi/iau-portal-frontend:latest
-    container_name: iau-portal-frontend
-    restart: unless-stopped
-    ports:
-      - "3000:80"  # Change to 8080:80 for custom port
-    environment:
-      # Uncomment and set if using custom backend port:
-      # - VITE_API_URL=http://your-server-ip:8001
-    depends_on:
-      - backend
-    networks:
-      - iau-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
+7. **Common customizations:**
 
-networks:
-  iau-network:
-    driver: bridge
+   **Change ports:**
+   ```yaml
+   backend:
+     ports:
+       - "8001:8000"  # Backend on port 8001
+   frontend:
+     ports:
+       - "8080:80"    # Frontend on port 8080
+   ```
 
-volumes:
-  iau-data:
-    driver: local
-  iau-templates:
-    driver: local
-```
+   **Use absolute paths for data storage:**
+   ```yaml
+   backend:
+     volumes:
+       - /opt/iau-portal/data:/app/backend/data
+       - /opt/iau-portal/templates:/app/backend/templates
+   ```
 
-5. **Deploy the stack**
+   **Set backend URL for network access:**
+   ```yaml
+   frontend:
+     build:
+       args:
+         - VITE_API_URL=http://192.168.1.100:8000
+   ```
+
+8. **Deploy the stack**
 
 ---
 
