@@ -1,6 +1,9 @@
 # Frontend Dockerfile - React + Vite Application
 FROM node:18-alpine AS builder
 
+# Force rebuild - version 2
+RUN echo "Build version 2"
+
 # Install git (needed for some npm packages)
 RUN apk add --no-cache git
 
