@@ -131,7 +131,17 @@ export const TRANSLATIONS = {
     noAttachment: "No Attachment",
     teamCalendar: "Team Availability Calendar",
     employee: "Employee",
-    weekend: "Weekend"
+    weekend: "Weekend",
+    reportPeriod: "Report Period",
+    selectPeriod: "Select Period",
+    ytd: "Year to Date (YTD)",
+    last30Days: "Last 30 Days",
+    last60Days: "Last 60 Days",
+    last90Days: "Last 90 Days",
+    fullYear: "Full Contract Year",
+    custom: "Custom Range",
+    downloadReport: "Download Report",
+    reportDownloadFailed: "Failed to download report"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -264,6 +274,16 @@ export const TRANSLATIONS = {
     noAttachment: "لا يوجد مرفق",
     teamCalendar: "جدول توفر الفريق",
     employee: "الموظف",
-    weekend: "عطلة نهاية الأسبوع"
+    weekend: "عطلة نهاية الأسبوع",
+    reportPeriod: "فترة التقرير",
+    selectPeriod: "اختر الفترة",
+    ytd: "من بداية السنة حتى الآن",
+    last30Days: "آخر 30 يوماً",
+    last60Days: "آخر 60 يوماً",
+    last90Days: "آخر 90 يوماً",
+    fullYear: "سنة العقد الكاملة",
+    custom: "فترة مخصصة",
+    downloadReport: "تحميل التقرير",
+    reportDownloadFailed: "فشل تحميل التقرير"
   }
 };

@@ -1,5 +1,5 @@
-import React from 'react';
-import { FileDown, CheckCircle, LogIn, LogOut, AlertTriangle, AlertCircle, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileDown, CheckCircle, LogIn, LogOut, AlertTriangle, AlertCircle, Clock, ChevronDown } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 import { downloadDashboardReport } from '../api';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,12 @@ import DashboardTimeline from '../components/DashboardTimeline';
 export default function Dashboard() {
   const { user, employees, requests, t, lang, attendance, loading, formatDate } = usePortal();
   const navigate = useNavigate();
+
+  // Report filter state
+  const [reportFilter, setReportFilter] = useState('ytd');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   // Calculate balances
   const availableBalance = user.vacation_balance || 0;
@@ -50,27 +56,112 @@ export default function Dashboard() {
     ? `${t.onLeave || "On Leave"} (${t[attendance.vacation_type] || attendance.vacation_type})`
     : t.present || "Present";
   
+  const getFilterLabel = () => {
+    const labels = {
+      'ytd': t.ytd || 'Year to Date',
+      'last_30': t.last30Days || 'Last 30 Days',
+      'last_60': t.last60Days || 'Last 60 Days',
+      'last_90': t.last90Days || 'Last 90 Days',
+      'full_year': t.fullYear || 'Full Contract Year',
+      'custom': t.custom || 'Custom Range'
+    };
+    return labels[reportFilter] || labels['ytd'];
+  };
+
   const handleDownloadReport = async () => {
-      try {
-          await downloadDashboardReport();
-      } catch (error) {
-          console.error("Failed to download report", error);
-          alert("Failed to download report");
-      }
+    try {
+      const filterData = {
+        filter_type: reportFilter,
+        ...(reportFilter === 'custom' && {
+          start_date: customStartDate,
+          end_date: customEndDate
+        })
+      };
+      await downloadDashboardReport(filterData);
+      setShowFilterDropdown(false);
+    } catch (error) {
+      console.error("Failed to download report", error);
+      alert(t.reportDownloadFailed || "Failed to download report");
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-[#1e2c54]">{t.dashboard}</h1>
-        <div className="flex gap-2">
-            <button 
-                onClick={handleDownloadReport}
-                className="p-2 text-[#0f5132] bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-                title="Download Dashboard Report"
+        <div className="flex gap-2 items-center relative">
+          {/* Report Filter Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors text-sm"
             >
-                <FileDown size={18}/>
+              <span className="text-gray-700">{t.reportPeriod || "Period"}:</span>
+              <span className="font-medium text-[#1e2c54]">{getFilterLabel()}</span>
+              <ChevronDown size={16} className="text-gray-500" />
             </button>
+
+            {showFilterDropdown && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="p-3 space-y-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{t.selectPeriod || "Select Period"}</p>
+
+                  {[
+                    { value: 'ytd', label: t.ytd || 'Year to Date' },
+                    { value: 'last_30', label: t.last30Days || 'Last 30 Days' },
+                    { value: 'last_60', label: t.last60Days || 'Last 60 Days' },
+                    { value: 'last_90', label: t.last90Days || 'Last 90 Days' },
+                    { value: 'full_year', label: t.fullYear || 'Full Contract Year' },
+                    { value: 'custom', label: t.custom || 'Custom Range' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setReportFilter(option.value)}
+                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                        reportFilter === option.value
+                          ? 'bg-[#0f5132] text-white font-medium'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+
+                  {reportFilter === 'custom' && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{t.startDate || "Start Date"}</label>
+                        <input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{t.endDate || "End Date"}</label>
+                        <input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Download Button */}
+          <button
+            onClick={handleDownloadReport}
+            className="p-2 text-[#0f5132] bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+            title={t.downloadReport || "Download Report"}
+          >
+            <FileDown size={18}/>
+          </button>
         </div>
       </div>
 
