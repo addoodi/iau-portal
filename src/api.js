@@ -1,8 +1,9 @@
-// Determine API URL dynamically based on the current window location.
-// If accessed via localhost, it points to localhost:8000.
-// If accessed via a network IP (e.g., 192.168.1.5), it points to 192.168.1.5:8000.
+// Determine API URL dynamically based on environment or current window location.
+// Priority: 1) VITE_API_URL env variable, 2) Dynamic hostname detection
 const hostname = window.location.hostname;
-export const API_BASE_URL = `http://${hostname}:8000/api`;
+export const API_BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : `http://${hostname}:8000/api`;
 
 // A utility to get the token from localStorage
 const getToken = () => {
