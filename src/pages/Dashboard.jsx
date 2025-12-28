@@ -1,10 +1,13 @@
 import React from 'react';
-import { FileDown, CheckCircle, LogIn, LogOut, AlertTriangle } from 'lucide-react';
+import { FileDown, CheckCircle, LogIn, LogOut, AlertTriangle, AlertCircle, Clock } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 import { downloadDashboardReport } from '../api';
+import { useNavigate } from 'react-router-dom';
+import DashboardTimeline from '../components/DashboardTimeline';
 
 export default function Dashboard() {
   const { user, employees, requests, t, lang, attendance, loading, formatDate } = usePortal();
+  const navigate = useNavigate();
 
   // Calculate balances
   const availableBalance = user.vacation_balance || 0;
@@ -22,6 +25,17 @@ export default function Dashboard() {
       if (user.role?.toLowerCase() === 'manager') return u.manager_id === user.id;
       return false;
   });
+
+  // Count pending requests for managers/admins
+  const pendingRequests = requests.filter(r => {
+    if (user.role?.toLowerCase() === 'admin') return r.status === 'Pending';
+    if (user.role?.toLowerCase() === 'manager') {
+      const employee = employees.find(e => e.id === r.employee_id);
+      return r.status === 'Pending' && employee?.manager_id === user.id;
+    }
+    return false;
+  });
+  const pendingCount = pendingRequests.length;
 
   const formatTime = (isoString) => {
     if (!isoString) return '--:--';
@@ -86,45 +100,63 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Attendance Widget */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">
+      {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') && pendingCount > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3 shadow-sm cursor-pointer hover:bg-yellow-100 transition-colors" onClick={() => navigate('/approvals')}>
+            <Clock className="text-yellow-600 shrink-0 mt-1" size={24} />
+            <div className="flex-1">
+                <h3 className="font-bold text-yellow-800 text-lg">{t.pendingApprovals || "Pending Approvals"}</h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                    {t.pendingApprovalsMessage?.replace('{count}', pendingCount) || `You have ${pendingCount} pending leave request${pendingCount > 1 ? 's' : ''} awaiting your approval.`}
+                </p>
+            </div>
+            <button className="shrink-0 px-4 py-2 bg-yellow-600 text-white text-sm font-semibold rounded-lg hover:bg-yellow-700 transition-colors">
+                {t.reviewNow || "Review Now"}
+            </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Attendance Widget - Simplified */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
             {t.todaysAttendance || "Today's Attendance"}
           </h3>
-
-          {/* Centered Status Badge */}
-          <div className="flex items-center justify-center my-8">
+          <div className="flex items-center justify-center">
             {statusDisplay}
-          </div>
-
-          <div className="bg-gray-50 p-3 rounded-lg text-center text-xs text-gray-500">
-            {attendance?.status === "On Leave" ?
-              (t.enjoyVacation || "Enjoy your vacation!") :
-              (t.autoAttendanceMessage || "Attendance is automatically recorded based on your schedule.")
-            }
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 tracking-wider">{t.vacationBalance}</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="p-3 bg-green-50 rounded-lg">
+        {/* Vacation Balance Widget - With Contract End */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3 tracking-wider">{t.vacationBalance}</h3>
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            <div className="p-3 bg-green-50 rounded-lg text-center">
               <div className="text-2xl font-bold text-[#0f5132]">{totalEarned}</div>
               <div className="text-xs text-gray-500 font-medium">{t.earned}</div>
             </div>
-            <div className="p-3 bg-red-50 rounded-lg">
+            <div className="p-3 bg-red-50 rounded-lg text-center">
               <div className="text-2xl font-bold text-red-600">{usedBalance}</div>
               <div className="text-xs text-gray-500 font-medium">{t.used}</div>
             </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
+            <div className="p-3 bg-blue-50 rounded-lg text-center">
               <div className="text-2xl font-bold text-blue-600">{availableBalance}</div>
               <div className="text-xs text-gray-500 font-medium">{t.available}</div>
             </div>
           </div>
+          {user.days_remaining_in_contract !== undefined && (
+            <div className="bg-gray-50 p-2 rounded-lg flex items-center justify-between text-sm">
+              <span className="text-gray-600">{t.contractEndsIn || "Contract ends in"}</span>
+              <span className="font-semibold text-gray-800">{user.days_remaining_in_contract} {t.days || "days"}</span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Timeline Calendar for Managers/Admins */}
+      {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') && teamMembers.length > 0 && (
+        <DashboardTimeline teamMembers={teamMembers} requests={requests} />
+      )}
 
       {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'dean') && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
