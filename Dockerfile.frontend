@@ -6,16 +6,24 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# Set npm to use legacy peer deps (avoids conflicts)
+RUN npm config set legacy-peer-deps true
+
 # Copy package files
 COPY package*.json ./
 
-# Install ALL dependencies (needed for build)
-RUN npm ci
+# Install dependencies with verbose logging
+# Using npm install instead of npm ci for better Docker compatibility
+RUN npm install --verbose
 
 # Copy source code
 COPY . .
 
 # Build the application
+# VITE_API_URL can be set via build args
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
 # Stage 2: Serve with nginx
