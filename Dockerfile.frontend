@@ -12,18 +12,32 @@ WORKDIR /app
 # Copy everything first (simplest approach)
 COPY . .
 
+# Clean any existing node_modules and build artifacts
+RUN rm -rf node_modules build dist
+
 # Install dependencies
 RUN npm install --legacy-peer-deps
 
 # Build the application
-# Don't set VITE_API_URL here - it will be set at runtime
-RUN npm run build 2>&1 | tee build.log || \
-    (echo "==== BUILD FAILED ====" && \
-     echo "Build log:" && cat build.log && \
-     echo "==== Files in /app ====" && ls -laR && \
-     echo "==== package.json ====" && cat package.json && \
-     echo "==== vite.config.js ====" && cat vite.config.js && \
-     exit 1)
+RUN npm run build
+
+# Verify build succeeded and output directory exists
+RUN if [ ! -d "build" ]; then \
+        echo "==== BUILD OUTPUT DIRECTORY NOT FOUND ====" && \
+        echo "Expected: /app/build" && \
+        echo "Checking what directories exist:" && \
+        ls -la && \
+        echo "==== Content of package.json ====" && \
+        cat package.json && \
+        echo "==== Content of vite.config.js ====" && \
+        cat vite.config.js && \
+        exit 1; \
+    fi
+
+# Show what was built
+RUN echo "==== BUILD SUCCESSFUL ====" && \
+    echo "Contents of build directory:" && \
+    ls -la build/
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
