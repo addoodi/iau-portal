@@ -12,6 +12,8 @@ import {
   initializeAdmin as apiInitializeAdmin,
   createUnit as apiCreateUnit,
   updateUnit as apiUpdateUnit,
+  deleteUnit as apiDeleteUnit,
+  updateEmployee as apiUpdateEmployee,
   uploadSignature as apiUploadSignature,
   deleteSignature as apiDeleteSignature,
   getTodayAttendance as apiGetTodayAttendance,
@@ -235,6 +237,36 @@ export const PortalProvider = ({ children }) => {
     }
   };
 
+  const deleteUnit = async (unitId) => {
+    try {
+        setLoading(true);
+        await apiDeleteUnit(unitId);
+        await refreshData();
+        return { success: true };
+    } catch (error) {
+        const errorMessage = error.message || "Failed to delete unit";
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const updateEmployee = async (employeeId, employeeData) => {
+    try {
+        setLoading(true);
+        const updated = await apiUpdateEmployee(employeeId, employeeData);
+        await refreshData();
+        return updated;
+    } catch (error) {
+        console.error("Failed to update employee:", error);
+        setError(error.message || "Failed to update employee");
+        return null;
+    } finally {
+        setLoading(false);
+    }
+  };
+
   const uploadSignature = async (base64) => {
     try {
         setLoading(true);
@@ -292,7 +324,7 @@ export const PortalProvider = ({ children }) => {
     <PortalContext.Provider value={{
       user, users, employees, requests, units, attendance, lang, t, isRTL, loading, error,
       setLang, login, logout, createRequest, updateRequestStatus, uploadSignature, deleteSignature,
-      initializeAdmin, refreshData, addUnit, editUnit, deleteUser,
+      initializeAdmin, refreshData, addUnit, editUnit, deleteUnit, updateEmployee, deleteUser,
       dateSystem, toggleDateSystem, formatDate, isHijri
     }}>
       {children}

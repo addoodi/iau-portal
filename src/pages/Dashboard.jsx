@@ -197,8 +197,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Status Widget - Colored Background */}
-        <div className={`${statusBgColor} p-3 rounded-xl shadow-sm border ${isOnLeave ? 'border-orange-200' : 'border-green-200'}`}>
-          <h3 className={`text-xs font-semibold uppercase tracking-wider mb-2 ${statusTextColor}`}>
+        <div className={`${statusBgColor} p-6 rounded-xl shadow-sm border ${isOnLeave ? 'border-orange-200' : 'border-green-200'} flex flex-col items-center justify-center min-h-[140px]`}>
+          <h3 className={`text-xs font-semibold uppercase tracking-wider mb-3 ${statusTextColor}`}>
             {t.status || "Status"}
           </h3>
           <div className={`text-center text-lg font-bold ${statusTextColor}`}>

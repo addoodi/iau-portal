@@ -1,5 +1,9 @@
 from .repositories import CSVUserRepository, CSVEmployeeRepository, CSVLeaveRequestRepository, CSVUnitRepository, CSVAttendanceRepository, CSVEmailSettingsRepository
 from .models import User, UserCreate, Employee, EmployeeCreate, EmployeeWithBalance, LeaveRequest, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UnitCreate, UnitUpdate, AttendanceLog, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate
+from .email_templates import (
+    render_leave_request_created_email,
+    render_leave_request_approved_email
+)
 from typing import List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime, date
@@ -13,6 +17,7 @@ import mimetypes
 from pathlib import Path
 import smtplib
 from email.message import EmailMessage
+import logging
 
 # Directory for attachments
 ATTACHMENTS_DIR = Path("backend/data/attachments")
@@ -286,8 +291,47 @@ class LeaveRequestService:
             status='Pending',
             attachments=leave_request_create.attachments # Save attachment paths
         )
-        
-        return self.leave_request_repository.add(leave_request)
+
+        created_request = self.leave_request_repository.add(leave_request)
+
+        # Send notification to manager
+        try:
+            if employee.manager_id:
+                manager = self.employee_service.get_employee_by_id(employee.manager_id)
+
+                if manager:
+                    # Get manager's email from user record
+                    from .dependencies import get_email_service
+                    email_service = get_email_service()
+
+                    # Get user records to fetch emails
+                    manager_user = self.employee_service.user_repository.get_by_id(manager.user_id)
+
+                    if manager_user and manager_user.email:
+                        email_data = {
+                            'employee_name_ar': f"{employee.first_name_ar} {employee.last_name_ar}",
+                            'employee_name_en': f"{employee.first_name_en} {employee.last_name_en}",
+                            'employee_id': employee.id,
+                            'vacation_type': leave_request_create.vacation_type,
+                            'start_date': leave_request_create.start_date,
+                            'end_date': leave_request_create.end_date,
+                            'duration': duration,
+                            'manager_name_ar': f"{manager.first_name_ar} {manager.last_name_ar}",
+                            'manager_name_en': f"{manager.first_name_en} {manager.last_name_en}"
+                        }
+
+                        html_body = render_leave_request_created_email(email_data)
+                        email_service.send_email(
+                            to_email=manager_user.email,
+                            subject="New Leave Request / طلب إجازة جديد",
+                            body=html_body,
+                            is_html=True
+                        )
+                        logging.info(f"Leave request notification sent to manager {manager_user.email}")
+        except Exception as e:
+            logging.error(f"Failed to send manager notification: {str(e)}")
+
+        return created_request
 
     def update_leave_request(self, leave_request_id: int, leave_request_update: LeaveRequestUpdate) -> Optional[LeaveRequest]:
         leave_request = self.leave_request_repository.get_by_id(leave_request_id)
@@ -298,7 +342,41 @@ class LeaveRequestService:
             leave_request.status = leave_request_update.status
             if leave_request.status == 'Approved':
                 leave_request.approval_date = date.today().isoformat()
-                # TODO: Deduct from employee's vacation_balance.
+
+                # Send approval notification to employee
+                try:
+                    employee = self.employee_service.get_employee_by_id(leave_request.employee_id)
+                    if employee:
+                        # Get employee's email from user record
+                        from .dependencies import get_email_service
+                        email_service = get_email_service()
+
+                        employee_user = self.employee_service.user_repository.get_by_id(employee.user_id)
+
+                        if employee_user and employee_user.email:
+                            remaining_balance = employee.vacation_balance - leave_request.balance_used
+
+                            email_data = {
+                                'employee_name_ar': f"{employee.first_name_ar} {employee.last_name_ar}",
+                                'employee_name_en': f"{employee.first_name_en} {employee.last_name_en}",
+                                'vacation_type': leave_request.vacation_type,
+                                'start_date': leave_request.start_date,
+                                'end_date': leave_request.end_date,
+                                'duration': leave_request.duration,
+                                'balance_deducted': leave_request.balance_used,
+                                'remaining_balance': remaining_balance
+                            }
+
+                            html_body = render_leave_request_approved_email(email_data)
+                            email_service.send_email(
+                                to_email=employee_user.email,
+                                subject="Leave Request Approved / تمت الموافقة على طلب الإجازة",
+                                body=html_body,
+                                is_html=True
+                            )
+                            logging.info(f"Approval notification sent to employee {employee_user.email}")
+                except Exception as e:
+                    logging.error(f"Failed to send approval notification: {str(e)}")
             elif leave_request.status == 'Rejected':
                 leave_request.rejection_reason = leave_request_update.rejection_reason
         
@@ -329,13 +407,20 @@ class UnitService:
         unit = self.unit_repository.get_by_id(unit_id)
         if not unit:
             raise Exception("Unit not found")
-        
+
         if unit_update.name_en:
             unit.name_en = unit_update.name_en
         if unit_update.name_ar:
             unit.name_ar = unit_update.name_ar
-            
+
         return self.unit_repository.update(unit)
+
+    def delete_unit(self, unit_id: int) -> None:
+        """Delete a unit by ID"""
+        unit = self.unit_repository.get_by_id(unit_id)
+        if not unit:
+            raise Exception("Unit not found")
+        self.unit_repository.delete(unit_id)
 
 class AttendanceService:
     def __init__(self, attendance_repository: CSVAttendanceRepository, employee_service: EmployeeService, leave_request_repository: CSVLeaveRequestRepository):

@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from uuid import UUID
@@ -216,9 +217,17 @@ class CSVLeaveRequestRepository(BaseRepository):
         leave_request_row = self.df[self.df['id'] == id]
         if not leave_request_row.empty:
             row_dict = leave_request_row.iloc[0].to_dict()
+            # Manually handle NaN values, skipping list/array columns
             for key, value in row_dict.items():
-                if pd.isna(value):
-                    row_dict[key] = None
+                if isinstance(value, (list, np.ndarray)):
+                    # Keep list values as-is
+                    continue
+                try:
+                    if pd.isna(value):
+                        row_dict[key] = None
+                except (ValueError, TypeError):
+                    # If pd.isna fails, keep the value as-is
+                    pass
             return LeaveRequest(**row_dict)
         return None
     

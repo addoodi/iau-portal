@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CheckCircle, AlertTriangle, Paperclip } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 import { API_BASE_URL } from '../api';
-import TeamCalendar from '../components/TeamCalendar';
+import DashboardTimeline from '../components/DashboardTimeline';
 
 export default function Approvals() {
   const { user, employees, requests, updateRequestStatus, t, isRTL, formatDate } = usePortal();
@@ -76,12 +76,15 @@ export default function Approvals() {
       return null;
   };
 
+  const teamMembers = employees.filter(e => teamEmployeeIds.includes(e.id));
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[500px]">
-      <div className="p-6 border-b border-gray-100">
-        <h2 className="text-xl font-bold text-[#1e2c54]">{t.approvals}</h2>
-      </div>
-      <div className="divide-y divide-gray-100">
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[500px]">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-[#1e2c54]">{t.approvals}</h2>
+        </div>
+        <div className="divide-y divide-gray-100">
         {pendingRequests.length === 0 ? (
           <div className="p-12 text-center text-gray-400">
             <CheckCircle size={48} className="mx-auto mb-4 text-gray-200" />
@@ -187,16 +190,12 @@ export default function Approvals() {
              );
           })
         )}
+        </div>
       </div>
 
-      {/* Team Calendar */}
-      {pendingRequests.length > 0 && (
-        <div className="mt-6">
-          <TeamCalendar
-            teamMembers={employees.filter(e => teamEmployeeIds.includes(e.id))}
-            requests={requests}
-          />
-        </div>
+      {/* Team Timeline */}
+      {teamMembers.length > 0 && (
+        <DashboardTimeline teamMembers={teamMembers} requests={requests} />
       )}
     </div>
   );

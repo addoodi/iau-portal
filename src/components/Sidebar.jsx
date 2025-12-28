@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LogOut, User, Home, Send, UserCheck, Users, Building, Settings } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 import { Link, useLocation } from 'react-router-dom';
@@ -6,6 +6,14 @@ import { Link, useLocation } from 'react-router-dom';
 export default function Sidebar({ isOpen, toggleSidebar }) {
   const { user, logout, t, lang } = usePortal();
   const location = useLocation();
+
+  // Auto-close on mobile when route changes
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (isMobile && isOpen) {
+      toggleSidebar(); // Close sidebar
+    }
+  }, [location.pathname]); // Run when route changes
 
   const menuItems = [
     { id: 'dashboard', path: '/dashboard', icon: Home, label: t.dashboard, roles: ['admin', 'manager', 'employee'] },

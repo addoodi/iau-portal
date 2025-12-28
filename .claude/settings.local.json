@@ -21,7 +21,15 @@
       "Bash(git restore:*)",
       "Bash(did not complete successfully: exit code: 1\"\n\nThe build will now:\n✅ Install dependencies successfully\n✅ Handle peer dependency warnings gracefully\n✅ Build the frontend application\n✅ Create optimized production bundle\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(ls:*)",
-      "Bash(docker build:*)"
+      "Bash(docker build:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:stackoverflow.com)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(cat:*)",
+      "Bash(python test_signature_positions.py:*)",
+      "Bash(pip install:*)",
+      "Bash(cd:*)"
     ]
   }
 }

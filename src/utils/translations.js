@@ -143,7 +143,19 @@ export const TRANSLATIONS = {
     downloadReport: "Download Report",
     reportDownloadFailed: "Failed to download report",
     approving: "Approving...",
-    approveFailed: "Failed to approve request"
+    approveFailed: "Failed to approve request",
+    delete: "Delete",
+    confirmDeleteUnit: "Are you sure you want to delete this unit?",
+    backToDashboard: "Back to Dashboard",
+    contractInformation: "Contract Information",
+    daysRemaining: "Days Remaining",
+    editContractDate: "Edit Contract Date",
+    updateFailed: "Failed to update employee",
+    saving: "Saving...",
+    save: "Save",
+    totalEarned: "Total Earned",
+    edit: "Edit",
+    addUnit: "Add Unit"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -288,6 +300,18 @@ export const TRANSLATIONS = {
     downloadReport: "تحميل التقرير",
     reportDownloadFailed: "فشل تحميل التقرير",
     approving: "جاري الاعتماد...",
-    approveFailed: "فشل اعتماد الطلب"
+    approveFailed: "فشل اعتماد الطلب",
+    delete: "حذف",
+    confirmDeleteUnit: "هل أنت متأكد من حذف هذه الوحدة؟",
+    backToDashboard: "العودة إلى لوحة التحكم",
+    contractInformation: "معلومات العقد",
+    daysRemaining: "الأيام المتبقية",
+    editContractDate: "تعديل تاريخ العقد",
+    updateFailed: "فشل تحديث الموظف",
+    saving: "جاري الحفظ...",
+    save: "حفظ",
+    totalEarned: "المجموع المستحق",
+    edit: "تعديل",
+    addUnit: "إضافة وحدة"
   }
 };

@@ -1,43 +1,156 @@
 from docxtpl import DocxTemplate, InlineImage
 from docx import Document
-from docx.shared import Cm, Pt, RGBColor
+from docx.shared import Cm, Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import parse_xml, register_element_cls
+from docx.oxml.ns import nsdecls
+from docx.oxml.shape import CT_Picture
+from docx.oxml.xmlchemy import BaseOxmlElement, OneAndOnlyOne
 from io import BytesIO
 import os
 from datetime import datetime
 from hijri_converter import Gregorian
 
+# Source: https://stackoverflow.com/a/70598444
+# Author: skyway
+# License: CC BY-SA 4.0
+# Floating image implementation for python-docx
+
+class CT_Anchor(BaseOxmlElement):
+    """
+    ``<w:anchor>`` element, container for a floating image.
+    """
+    extent = OneAndOnlyOne('wp:extent')
+    docPr = OneAndOnlyOne('wp:docPr')
+    graphic = OneAndOnlyOne('a:graphic')
+
+    @classmethod
+    def new(cls, cx, cy, shape_id, pic, pos_x, pos_y):
+        """
+        Return a new ``<wp:anchor>`` element populated with the values passed
+        as parameters.
+        """
+        anchor = parse_xml(cls._anchor_xml(pos_x, pos_y))
+        anchor.extent.cx = cx
+        anchor.extent.cy = cy
+        anchor.docPr.id = shape_id
+        anchor.docPr.name = 'Picture %d' % shape_id
+        anchor.graphic.graphicData.uri = (
+            'http://schemas.openxmlformats.org/drawingml/2006/picture'
+        )
+        anchor.graphic.graphicData._insert_pic(pic)
+        return anchor
+
+    @classmethod
+    def new_pic_anchor(cls, shape_id, rId, filename, cx, cy, pos_x, pos_y):
+        """
+        Return a new `wp:anchor` element containing the `pic:pic` element
+        specified by the argument values.
+        """
+        pic_id = 0  # Word doesn't seem to use this, but does not omit it
+        pic = CT_Picture.new(pic_id, filename, rId, cx, cy)
+        anchor = cls.new(cx, cy, shape_id, pic, pos_x, pos_y)
+        anchor.graphic.graphicData._insert_pic(pic)
+        return anchor
+
+    @classmethod
+    def _anchor_xml(cls, pos_x, pos_y):
+        return (
+            '<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="0" \n'
+            '           behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1" \n'
+            '           %s>\n'
+            '  <wp:simplePos x="0" y="0"/>\n'
+            '  <wp:positionH relativeFrom="page">\n'
+            '    <wp:posOffset>%d</wp:posOffset>\n'
+            '  </wp:positionH>\n'
+            '  <wp:positionV relativeFrom="page">\n'
+            '    <wp:posOffset>%d</wp:posOffset>\n'
+            '  </wp:positionV>\n'
+            '  <wp:extent cx="914400" cy="914400"/>\n'
+            '  <wp:wrapNone/>\n'
+            '  <wp:docPr id="666" name="unnamed"/>\n'
+            '  <wp:cNvGraphicFramePr>\n'
+            '    <a:graphicFrameLocks noChangeAspect="1"/>\n'
+            '  </wp:cNvGraphicFramePr>\n'
+            '  <a:graphic>\n'
+            '    <a:graphicData uri="URI not set"/>\n'
+            '  </a:graphic>\n'
+            '</wp:anchor>' % ( nsdecls('wp', 'a', 'pic', 'r'), int(pos_x), int(pos_y) )
+        )
+
+
+def new_pic_anchor(part, image_descriptor, width, height, pos_x, pos_y):
+    """Return a newly-created `w:anchor` element.
+
+    The element contains the image specified by *image_descriptor* and is scaled
+    based on the values of *width* and *height*.
+    """
+    rId, image = part.get_or_add_image(image_descriptor)
+    cx, cy = image.scaled_dimensions(width, height)
+    shape_id, filename = part.next_id, image.filename
+    return CT_Anchor.new_pic_anchor(shape_id, rId, filename, cx, cy, pos_x, pos_y)
+
+
+def add_float_picture(p, image_path_or_stream, width=None, height=None, pos_x=0, pos_y=0):
+    """Add float picture at fixed position `pos_x` and `pos_y` to the top-left point of page.
+    """
+    run = p.add_run()
+    anchor = new_pic_anchor(run.part, image_path_or_stream, width, height, pos_x, pos_y)
+    run._r.add_drawing(anchor)
+
+# Register the element
+register_element_cls('wp:anchor', CT_Anchor)
+
 def create_vacation_form(context):
     """
     Generates a vacation form from a template and returns it as a byte stream.
-    
+
     Args:
         context (dict): A dictionary containing the data to be rendered in the template.
-        
+
     Returns:
         BytesIO: A memory stream containing the generated DOCX document.
     """
     doc = DocxTemplate("backend/templates/vacation_template.docx")
-    
-    # Handle Signatures
-    if context.get('employee_signature_path') and os.path.exists(context.get('employee_signature_path')):
-        context['employee_signature'] = InlineImage(doc, context['employee_signature_path'], width=Cm(3.5))
-    else:
-        context['employee_signature'] = ''
 
-    if context.get('manager_signature_path') and os.path.exists(context.get('manager_signature_path')):
-        context['manager_signature'] = InlineImage(doc, context['manager_signature_path'], width=Cm(3.5))
-    else:
-        context['manager_signature'] = ''
+    # Extract signature paths before rendering
+    employee_sig_path = context.pop('employee_signature_path', None)
+    manager_sig_path = context.pop('manager_signature_path', None)
+
+    # Set empty strings for signature placeholders in template
+    context['employee_signature'] = ''
+    context['manager_signature'] = ''
 
     doc.render(context)
-    
-    # Save the document to a memory stream
-    file_stream = BytesIO()
-    doc.save(file_stream)
-    file_stream.seek(0)  # Go to the beginning of the stream
-    
-    return file_stream
+
+    # Save to BytesIO first
+    temp_stream = BytesIO()
+    doc.save(temp_stream)
+    temp_stream.seek(0)
+
+    # Re-open with python-docx to add floating signatures
+    document = Document(temp_stream)
+
+    # Add signatures as floating images if they exist
+    # Position in Inches: measured from top-left corner of page
+    if employee_sig_path and os.path.exists(employee_sig_path):
+        # Employee signature: horizontal 1.8", vertical 4"
+        p = document.paragraphs[0] if document.paragraphs else document.add_paragraph()
+        add_float_picture(p, employee_sig_path, width=Inches(1.1),
+                         pos_x=Inches(1.8), pos_y=Inches(4))
+
+    if manager_sig_path and os.path.exists(manager_sig_path):
+        # Manager signature: horizontal 1.18", vertical 6.4"
+        p = document.paragraphs[0] if document.paragraphs else document.add_paragraph()
+        add_float_picture(p, manager_sig_path, width=Inches(1.1),
+                         pos_x=Inches(1.18), pos_y=Inches(6.4))
+
+    # Save final document
+    final_stream = BytesIO()
+    document.save(final_stream)
+    final_stream.seek(0)
+
+    return final_stream
 
 # Report translations
 REPORT_TRANSLATIONS = {
@@ -84,11 +197,15 @@ REPORT_TRANSLATIONS = {
         'leaves_in_period': 'Leaves in Period',
         'current_status': 'Current Status',
         'leave_types_breakdown': 'Leave Types Breakdown',
-        'Annual': 'Annual Leave',
-        'Sick': 'Sick Leave',
-        'Emergency': 'Emergency Leave',
+        'annual': 'Annual Leave',
+        'sick': 'Sick Leave',
+        'emergency': 'Emergency Leave',
         'Present': 'Present',
         'On Leave': 'On Leave',
+        'Approved': 'Approved',
+        'Rejected': 'Rejected',
+        'Pending': 'Pending',
+        'Cancelled': 'Cancelled',
         'ytd': 'YEAR TO DATE',
         'last_30': 'LAST 30 DAYS',
         'last_60': 'LAST 60 DAYS',
@@ -139,11 +256,15 @@ REPORT_TRANSLATIONS = {
         'leaves_in_period': 'الإجازات في الفترة',
         'current_status': 'الحالة الحالية',
         'leave_types_breakdown': 'تفصيل أنواع الإجازات',
-        'Annual': 'إجازة اعتيادية',
-        'Sick': 'إجازة مرضية',
-        'Emergency': 'إجازة طارئة',
+        'annual': 'إجازة اعتيادية',
+        'sick': 'إجازة مرضية',
+        'emergency': 'إجازة طارئة',
         'Present': 'حاضر',
         'On Leave': 'في إجازة',
+        'Approved': 'معتمد',
+        'Rejected': 'مرفوض',
+        'Pending': 'قيد الانتظار',
+        'Cancelled': 'ملغي',
         'ytd': 'من بداية السنة حتى الآن',
         'last_30': 'آخر 30 يوماً',
         'last_60': 'آخر 60 يوماً',
@@ -313,7 +434,7 @@ def create_dashboard_report(data):
 
         for req in data['requests']:
             row = req_table.add_row().cells
-            row[0].text = t.get(req['vacation_type'], req['vacation_type'])
+            row[0].text = t.get(req['vacation_type'].lower(), req['vacation_type'])
             row[1].text = format_date_for_report(req['start_date'], date_system, language)
             row[2].text = format_date_for_report(req['end_date'], date_system, language)
             row[3].text = f"{req['duration']} {t['days']}"
@@ -384,7 +505,7 @@ def create_dashboard_report(data):
 
                     for leave in member['leaves_details']:
                         leave_row = leave_table.add_row().cells
-                        leave_row[0].text = t.get(leave['type'], leave['type'])
+                        leave_row[0].text = t.get(leave['type'].lower(), leave['type'])
                         leave_row[1].text = format_date_for_report(leave['start_date'], date_system, language)
                         leave_row[2].text = format_date_for_report(leave['end_date'], date_system, language)
                         leave_row[3].text = f"{leave['duration']} {t['days']}"

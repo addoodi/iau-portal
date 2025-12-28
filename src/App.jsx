@@ -17,6 +17,7 @@ import RequestModal from './components/RequestModal';
 import Sidebar from './components/Sidebar'; // Import Sidebar
 import TopBar from './components/TopBar';   // Import TopBar
 import SiteSettings from './pages/SiteSettings'; // Import SiteSettings
+import EmployeeDetailView from './pages/EmployeeDetailView';
 
 // --- Setup & Auth Flow ---
 
@@ -72,7 +73,27 @@ function ProtectedRoute({ children }) {
 function MainLayout() {
   const { t, isRTL } = usePortal();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Initialize to true for larger screens
+
+  // Initialize sidebar based on screen size (md breakpoint = 768px)
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768;
+    }
+    return true; // Default for SSR
+  });
+
+  // Handle window resize - auto-open sidebar on desktop
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile && !sidebarOpen) {
+        setSidebarOpen(true); // Ensure sidebar visible on desktop
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
 
   return (
     <div className={`min-h-screen bg-gray-50 flex font-sans ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -123,6 +144,7 @@ export default function App() {
                                         <Route path="units" element={<UnitManagement />} />
                                         <Route path="profile" element={<Profile />} />
                                         <Route path="site-settings" element={<SiteSettings />} />
+                                        <Route path="employee/:employeeId" element={<EmployeeDetailView />} />
                                         <Route path="*" element={<Navigate to="/dashboard" replace />} />
                                     </Route>
                                 </Routes>

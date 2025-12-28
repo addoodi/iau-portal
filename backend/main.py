@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, Response
 from typing import List, Optional
 import io
 import os
@@ -109,15 +109,46 @@ def create_employee_and_user(employee_create: EmployeeCreate,
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.put("/api/employees/{employee_id}", response_model=EmployeeWithBalance)
-def update_employee(employee_id: str, employee_update: EmployeeUpdate, 
+def update_employee(employee_id: str, employee_update: EmployeeUpdate,
                     employee_service: EmployeeService = Depends(get_employee_service),
                     current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+
+    # Get current user's employee record
+    current_employee = employee_service.get_employee_by_user_id(current_user.id)
+
+    # Admin can update any employee, any field
+    if current_user.role == "admin":
+        try:
+            return employee_service.update_employee(employee_id, employee_update)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    # Manager can only update their direct reports, and only start_date field
+    elif current_user.role == "manager":
+        target_employee = employee_service.get_employee_by_id(employee_id)
+
+        if not target_employee:
+            raise HTTPException(status_code=404, detail="Employee not found")
+
+        # Verify this is the manager's direct report
+        if target_employee.manager_id != current_employee.id:
+            raise HTTPException(status_code=403, detail="Not authorized to update this employee")
+
+        # Verify only start_date is being updated
+        update_dict = employee_update.dict(exclude_unset=True)
+        if set(update_dict.keys()) != {'start_date'}:
+            raise HTTPException(
+                status_code=403,
+                detail="Managers can only update start_date field"
+            )
+
+        try:
+            return employee_service.update_employee(employee_id, employee_update)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    else:
         raise HTTPException(status_code=403, detail="Not authorized to update employees")
-    try:
-        return employee_service.update_employee(employee_id, employee_update)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/users/me/password")
 def change_password(password_update: UserPasswordUpdate,
@@ -181,14 +212,46 @@ def create_unit(unit_create: UnitCreate,
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.put("/api/units/{unit_id}", response_model=Unit)
-def update_unit(unit_id: int, 
-                unit_update: UnitUpdate, 
-                unit_service: UnitService = Depends(get_unit_service), 
+def update_unit(unit_id: int,
+                unit_update: UnitUpdate,
+                unit_service: UnitService = Depends(get_unit_service),
                 current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to update units")
     try:
         return unit_service.update_unit(unit_id, unit_update)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/api/units/{unit_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_unit(
+    unit_id: int,
+    unit_service: UnitService = Depends(get_unit_service),
+    employee_service: EmployeeService = Depends(get_employee_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a unit if it has no assigned employees"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to delete units")
+
+    try:
+        # Check if unit has any employees
+        employees = employee_service.get_employees()
+        employees_in_unit = [e for e in employees if e.unit_id == unit_id]
+
+        if employees_in_unit:
+            employee_names = ', '.join([f"{e.first_name_en} {e.last_name_en}" for e in employees_in_unit[:3]])
+            if len(employees_in_unit) > 3:
+                employee_names += f" and {len(employees_in_unit) - 3} more"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot delete unit: {len(employees_in_unit)} employee(s) assigned ({employee_names})"
+            )
+
+        unit_service.delete_unit(unit_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -262,12 +325,12 @@ def download_vacation_form(request_id: int,
         except (ValueError, TypeError):
             return ""
 
-    # Vacation type translation
+    # Vacation type translation (case-insensitive)
     vacation_type_map = {
-        "Annual": "إجازة اعتيادية",
-        "Sick": "مرضية",
-        "Unpaid": "بدون أجر",
-        "Emergency": "طارئة"
+        "annual": "إجازة اعتيادية",
+        "sick": "مرضية",
+        "unpaid": "بدون أجر",
+        "emergency": "طارئة"
     }
 
     context = {
@@ -275,7 +338,7 @@ def download_vacation_form(request_id: int,
         'employee_id': employee.id,
         'manager_name': f"{manager.first_name_ar} {manager.last_name_ar}" if manager else "",
         'manager_position': manager.position_ar if manager else "",
-        'vacation_type': vacation_type_map.get(leave_request.vacation_type, leave_request.vacation_type),
+        'vacation_type': vacation_type_map.get(leave_request.vacation_type.lower(), leave_request.vacation_type),
         'start_date': to_hijri_str(leave_request.start_date),
         'end_date': to_hijri_str(leave_request.end_date),
         'duration': str(leave_request.duration),

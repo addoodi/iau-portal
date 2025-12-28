@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { usePortal } from '../context/PortalContext';
 import { convertToHijri, getHijriMonthNames } from '../utils/hijriUtils';
 
 export default function DashboardTimeline({ teamMembers, requests }) {
-  const { t, lang, isHijri } = usePortal();
+  const { t, lang, isHijri, isRTL } = usePortal();
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Generate 60 days starting from current date
@@ -84,6 +85,23 @@ export default function DashboardTimeline({ teamMembers, requests }) {
     return `${bgClass} ${borderClass} h-12 min-w-[40px] text-center text-xs`;
   };
 
+  // Check if employee is on leave today
+  const getEmployeeCurrentStatus = (employeeId) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const onLeaveToday = requests.find(r => {
+      if (r.employee_id !== employeeId || r.status !== 'Approved') return false;
+      const startDate = new Date(r.start_date);
+      const endDate = new Date(r.end_date);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      return today >= startDate && today <= endDate;
+    });
+
+    return onLeaveToday ? 'on-leave' : 'present';
+  };
+
   // Format date for display
   const formatDateHeader = (date) => {
     if (isHijri) {
@@ -112,16 +130,16 @@ export default function DashboardTimeline({ teamMembers, requests }) {
           <span className="text-sm text-gray-600">{getMonthName()}</span>
           <div className="flex gap-1">
             <button
-              onClick={goToPreviousMonth}
+              onClick={isRTL ? goToNextMonth : goToPreviousMonth}
               className="p-1 hover:bg-gray-100 rounded transition-colors"
-              title={t.previousMonth || "Previous Month"}
+              title={isRTL ? (t.nextMonth || "Next Month") : (t.previousMonth || "Previous Month")}
             >
               <ChevronLeft size={20} />
             </button>
             <button
-              onClick={goToNextMonth}
+              onClick={isRTL ? goToPreviousMonth : goToNextMonth}
               className="p-1 hover:bg-gray-100 rounded transition-colors"
-              title={t.nextMonth || "Next Month"}
+              title={isRTL ? (t.previousMonth || "Previous Month") : (t.nextMonth || "Next Month")}
             >
               <ChevronRight size={20} />
             </button>
@@ -168,17 +186,24 @@ export default function DashboardTimeline({ teamMembers, requests }) {
             </tr>
           </thead>
           <tbody>
-            {teamMembers.map((member) => (
+            {teamMembers.map((member) => {
+              const currentStatus = getEmployeeCurrentStatus(member.id);
+              const cellBgColor = currentStatus === 'on-leave' ? 'bg-orange-50' : 'bg-green-50';
+              const cellBorderColor = currentStatus === 'on-leave' ? 'border-orange-200' : 'border-green-200';
+
+              return (
               <tr key={member.id} className="hover:bg-gray-50 transition-colors">
-                <td className="sticky left-0 bg-white z-10 p-2 text-sm border-r border-gray-200 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-800">
-                      {lang === 'ar' ? member.name_ar : member.name_en}
-                    </span>
-                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                      {member.vacation_balance || 0}
-                    </span>
-                  </div>
+                <td className={`sticky left-0 ${cellBgColor} z-10 p-2 text-sm border-r-2 ${cellBorderColor} border-b border-gray-100`}>
+                  <Link to={`/employee/${member.id}`} className="block">
+                    <div className="flex items-center justify-between cursor-pointer hover:opacity-80">
+                      <span className="font-medium text-gray-800">
+                        {lang === 'ar' ? member.name_ar : member.name_en}
+                      </span>
+                      <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                        {member.vacation_balance || 0}
+                      </span>
+                    </div>
+                  </Link>
                 </td>
                 {days.map((date, idx) => {
                   const status = getStatusForDate(member.id, date);
@@ -197,7 +222,8 @@ export default function DashboardTimeline({ teamMembers, requests }) {
                   );
                 })}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

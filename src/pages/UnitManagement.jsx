@@ -3,7 +3,7 @@ import { usePortal } from '../context/PortalContext';
 import AddUnitModal from '../components/AddUnitModal';
 
 export default function UnitManagement() {
-  const { units, employees, t, isRTL, user } = usePortal();
+  const { units, employees, deleteUnit, t, isRTL, user, lang } = usePortal();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [unitToEdit, setUnitToEdit] = useState(null);
 
@@ -17,6 +17,17 @@ export default function UnitManagement() {
   const handleAdd = () => {
     setUnitToEdit(null);
     setIsModalOpen(true);
+  };
+
+  const handleDeleteUnit = async (unit) => {
+    if (!window.confirm(`${t.confirmDeleteUnit || 'Are you sure you want to delete this unit?'} "${lang === 'ar' ? unit.name_ar : unit.name_en}"?`)) {
+        return;
+    }
+
+    const result = await deleteUnit(unit.id);
+    if (!result.success) {
+        alert(result.error);
+    }
   };
   
   return (
@@ -46,12 +57,20 @@ export default function UnitManagement() {
                             </span>
                         </div>
                         {isAdmin && (
-                            <button 
-                                onClick={() => handleEdit(unit)}
-                                className="text-sm text-blue-600 hover:text-blue-800 font-medium px-3 py-1 hover:bg-blue-50 rounded-lg transition-colors"
-                            >
-                                {t.edit || 'Edit'}
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleEdit(unit)}
+                                    className="text-sm text-blue-600 hover:text-blue-800 font-medium px-3 py-1 hover:bg-blue-50 rounded-lg transition-colors"
+                                >
+                                    {t.edit || 'Edit'}
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteUnit(unit)}
+                                    className="text-sm text-red-600 hover:text-red-800 font-medium px-3 py-1 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                    {t.delete || 'Delete'}
+                                </button>
+                            </div>
                         )}
                     </div>
                     <div className="p-4">

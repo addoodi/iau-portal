@@ -147,6 +147,19 @@ export const updateUnit = async (unitId, unitData) => {
     return handleResponse(response);
 };
 
+export const deleteUnit = async (unitId) => {
+    const response = await fetch(`${API_BASE_URL}/units/${unitId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+    });
+
+    if (response.status === 204) {
+        return true; // Success, no content
+    }
+
+    return handleResponse(response);
+};
+
 export const uploadSignature = async (base64Image) => {
     const response = await fetch(`${API_BASE_URL}/users/me/signature`, {
         method: 'POST',
