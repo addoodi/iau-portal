@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Backend - FastAPI
   backend:
@@ -9,12 +7,18 @@ services:
     container_name: iau-portal-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      # Format: "HOST_PORT:CONTAINER_PORT"
+      # Change HOST_PORT to customize (e.g., "8001:8000")
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
-      # Persist CSV data
+      # IMPORTANT: When using Portainer Git deployment, these paths are relative to the repo
+      # Option 1: Use relative paths (data persists in cloned repo)
       - ./backend/data:/app/backend/data
-      # Persist templates
       - ./backend/templates:/app/backend/templates
+
+      # Option 2: Use absolute paths on your server (uncomment and edit):
+      # - ${DATA_PATH:-/opt/iau-portal/data}:/app/backend/data
+      # - ${TEMPLATES_PATH:-/opt/iau-portal/templates}:/app/backend/templates
     environment:
       - PYTHONUNBUFFERED=1
     networks:
@@ -32,12 +36,15 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        # Backend URL for API calls
-        - VITE_API_URL=http://localhost:8000
+        # Backend URL - change to your server IP if accessing from other devices
+        # Example: VITE_API_URL=http://192.168.1.100:8000
+        - VITE_API_URL=${VITE_API_URL:-}
     container_name: iau-portal-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      # Format: "HOST_PORT:CONTAINER_PORT"
+      # Change HOST_PORT to customize (e.g., "8080:80")
+      - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
     networks:

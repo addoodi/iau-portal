@@ -30,63 +30,79 @@ Complete guide for deploying IAU Portal using Docker and Portainer on your local
    - **Repository reference:** `refs/heads/main`
    - **Compose path:** `docker-compose.yml`
 
-4. **Configure Advanced Settings** (Optional but Recommended)
+4. **Environment Variables** (Optional - Customize Ports/Settings)
 
-   **a) Environment Variables:**
-   Click "+ Add an environment variable" to customize:
+   **IMPORTANT:** When using Git repository method, port and volume mappings are defined in `docker-compose.yml`, NOT in Portainer UI. You can customize them using environment variables.
+
+   Click **"+ Add an environment variable"** to customize:
+
+   | Variable | Default | Purpose | Example |
+   |----------|---------|---------|---------|
+   | `BACKEND_PORT` | 8000 | Backend host port | 8001 |
+   | `FRONTEND_PORT` | 3000 | Frontend host port | 8080 |
+   | `VITE_API_URL` | auto-detect | Backend URL for API | `http://192.168.1.100:8000` |
+
+   **Example Configuration:**
    ```
-   VITE_API_URL=http://your-server-ip:8000
-   ```
-   *(Change to your actual server IP and port)*
-
-   **b) Port Mapping:**
-   Click "Publish a new network port" to expose services:
-
-   **Backend:**
-   - Host: `8000` (or your preferred port like 8001)
-   - Container: `8000`
-
-   **Frontend:**
-   - Host: `3000` (or your preferred port like 3001)
-   - Container: `80`
-
-   *Example: Use port 8080 for frontend instead of 3000*
-
-   **c) Volume Mapping (Persistent Storage):**
-   Click "Add volume" to persist data on your local server:
-
-   **Backend Data Volume:**
-   - Container path: `/app/backend/data`
-   - Volume/Bind: Choose one option:
-     - **Bind mount** (recommended): `/opt/iau-portal/data` *(creates folder on host)*
-     - **Volume**: `iau-portal-data` *(Docker managed volume)*
-
-   **Backend Templates Volume:**
-   - Container path: `/app/backend/templates`
-   - Bind mount: `/opt/iau-portal/templates`
-
-   **Example Local Storage Setup:**
-   ```
-   Host Path                    → Container Path
-   /opt/iau-portal/data         → /app/backend/data
-   /opt/iau-portal/templates    → /app/backend/templates
+   BACKEND_PORT=8000
+   FRONTEND_PORT=3000
+   VITE_API_URL=http://192.168.1.100:8000
    ```
 
-   **Create directories on your server first:**
+   **Common Scenarios:**
+
+   **a) Default ports (no customization needed):**
+   - Don't add any environment variables
+   - Access: Frontend `http://your-server:3000`, Backend `http://your-server:8000`
+
+   **b) Custom ports (8080 for frontend, 8001 for backend):**
+   ```
+   FRONTEND_PORT=8080
+   BACKEND_PORT=8001
+   VITE_API_URL=http://your-server-ip:8001
+   ```
+   - Access: Frontend `http://your-server:8080`, Backend `http://your-server:8001`
+
+   **c) Access from other devices on network:**
+   ```
+   VITE_API_URL=http://192.168.1.100:8000
+   ```
+   (Replace with your actual server IP)
+
+5. **Data Storage Location** (Important!)
+
+   With Git deployment, data is stored in the cloned repository directory on your server.
+
+   **Default location:** `/data/compose/<stack-id>/backend/data/`
+
+   Where `<stack-id>` is a number Portainer assigns (e.g., `/data/compose/51/`)
+
+   **To find your exact path:**
    ```bash
-   sudo mkdir -p /opt/iau-portal/data
-   sudo mkdir -p /opt/iau-portal/templates
-   sudo chmod -R 755 /opt/iau-portal
+   # SSH into your server
+   docker exec -it iau-portal-backend pwd
+   # Shows: /app
+
+   # View mounted data location
+   docker inspect iau-portal-backend | grep -A 5 Mounts
    ```
 
-5. **Deploy**
-   - Click **"Deploy the stack"**
-   - Portainer will clone the repo and build both containers
-   - Wait for build to complete (~2-5 minutes)
+   **Important:** Data persists as long as you don't delete the stack. To use custom paths, see "Method 2" below.
 
-6. **Access Application**
-   - Frontend: `http://your-server-ip:3000`
-   - Backend: `http://your-server-ip:8000`
+6. **Deploy**
+   - Click **"Deploy the stack"**
+   - Portainer will:
+     1. Clone repository from GitHub
+     2. Build backend Docker image (~1-2 min)
+     3. Build frontend Docker image (~2-3 min)
+     4. Start both containers
+   - Wait for build to complete (~3-5 minutes total)
+   - Watch logs in Portainer for progress
+
+7. **Access Application**
+   - Frontend: `http://your-server-ip:3000` (or your custom `FRONTEND_PORT`)
+   - Backend: `http://your-server-ip:8000` (or your custom `BACKEND_PORT`)
+   - Health check: `http://your-server-ip:8000/api/health`
 
 ---
 
@@ -548,6 +564,41 @@ services:
 ---
 
 ## 🐛 Troubleshooting
+
+### Build Failures (Most Common)
+
+#### Error: "version is obsolete"
+```
+level=warning msg="/data/compose/51/docker-compose.yml: `version` is obsolete"
+```
+
+**Cause:** Docker Compose v2 doesn't need version field
+**Status:** ✅ **FIXED** in latest commit - warning is harmless but resolved
+**Solution:** Already fixed in repository. Pull latest code or redeploy.
+
+#### Error: "npm ci --only=production failed: exit code 1"
+```
+failed to solve: process "/bin/sh -c npm ci --only=production" did not complete successfully: exit code: 1
+```
+
+**Cause:** Frontend build needs ALL dependencies, not just production ones
+**Status:** ✅ **FIXED** in latest commit
+**Solution:** Already fixed in `Dockerfile.frontend`. Pull latest code or redeploy stack.
+
+**To fix immediately:**
+1. Portainer → Stacks → iau-portal → **Stop**
+2. Click **Pull and redeploy**
+3. Portainer will fetch latest code and rebuild
+
+#### Can't find Port/Volume mapping in Portainer UI
+
+**This is normal!** When using Git repository deployment:
+- Port and volume mappings are defined in `docker-compose.yml`
+- You **cannot** edit them in Portainer UI
+- Use environment variables to customize (see section 4 above)
+- Or use "Method 2: Web Editor" to edit the compose file directly
+
+---
 
 ### Container won't start
 
