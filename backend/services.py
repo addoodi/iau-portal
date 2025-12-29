@@ -103,19 +103,28 @@ class UserService:
         return created_user
 
     def create_user(self, user_create: UserCreate) -> User:
+        # Normalize email to lowercase
+        email_lower = user_create.email.lower()
+
         hashed_password = get_password_hash(user_create.password)
         user = User(
-            email=user_create.email,
+            email=email_lower,
             password_hash=hashed_password,
             role=user_create.role
         )
         return self.user_repository.add(user)
 
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        user = self.user_repository.get_by_email(email)
+        # Convert email to lowercase for case-insensitive comparison
+        email_lower = email.lower()
+
+        user = self.user_repository.get_by_email(email_lower)
         if not user:
-            return None
-        if not verify_password(password, user.password_hash):
+            # Fallback: Check all users with case-insensitive comparison
+            all_users = self.user_repository.get_all()
+            user = next((u for u in all_users if u.email.lower() == email_lower), None)
+
+        if not user or not verify_password(password, user.password_hash):
             return None
         return user
 
@@ -201,9 +210,36 @@ class EmployeeService:
 
         return self._get_employee_with_balance(employee)
 
+    def get_team_members(self, manager_id: str, include_indirect: bool = True) -> List[EmployeeWithBalance]:
+        """
+        Get all team members for a manager (direct and indirect reports).
+
+        Args:
+            manager_id: The manager's employee ID
+            include_indirect: If True, includes subordinates of subordinates
+
+        Returns:
+            List of EmployeeWithBalance objects for all team members
+        """
+        from backend.hierarchy import get_all_subordinates
+
+        all_employees = self.get_employees()
+        subordinate_ids = get_all_subordinates(manager_id, all_employees, include_indirect)
+
+        return [emp for emp in all_employees if emp.id in subordinate_ids]
+
     def create_user_and_employee(self, employee_create: EmployeeCreate) -> EmployeeWithBalance:
         if self.user_repository.get_by_email(employee_create.email):
             raise Exception("User with this email already exists.")
+
+        # For non-admin roles, require unit_id, manager_id, and start_date
+        if employee_create.role != "admin":
+            if not employee_create.unit_id:
+                raise Exception("Unit is required for non-admin roles")
+            if not employee_create.manager_id:
+                raise Exception("Manager is required for non-admin roles")
+            if not employee_create.start_date:
+                raise Exception("Start date is required for non-admin roles")
 
         hashed_password = get_password_hash(employee_create.password)
         new_user = User(

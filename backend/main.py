@@ -5,8 +5,13 @@ from fastapi.responses import StreamingResponse, FileResponse, Response
 from typing import List, Optional
 import io
 import os
+from pathlib import Path
 from datetime import datetime, timedelta
 from hijri_converter import Gregorian
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from .models import User, UserCreate, LeaveRequest, Employee, EmployeeWithBalance, EmployeeCreate, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UserPasswordUpdate, UnitCreate, UnitUpdate, AttendanceLog, SignatureUpload, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate, DashboardReportRequest, TeamMemberStats
 from .repositories import CSVUserRepository, CSVEmployeeRepository, CSVLeaveRequestRepository
@@ -275,16 +280,41 @@ def create_leave_request(request_in: LeaveRequestCreate, leave_request_service: 
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.put("/api/requests/{request_id}", response_model=LeaveRequest)
-def update_leave_request(request_id: int, request_in: LeaveRequestUpdate, 
-                         leave_request_service: LeaveRequestService = Depends(get_leave_request_service), 
+def update_leave_request(request_id: int, request_in: LeaveRequestUpdate,
+                         leave_request_service: LeaveRequestService = Depends(get_leave_request_service),
+                         employee_service: EmployeeService = Depends(get_employee_service),
                          current_user: User = Depends(get_current_user)):
-    
-    if current_user.role not in ["manager", "admin", "dean"]:
-        raise HTTPException(status_code=403, detail="Not authorized to approve/reject requests")
+    """Update a leave request (status change for managers, or edit for requester)"""
+    from backend.hierarchy import is_subordinate_of
 
-    # TODO: For managers, we should verify that the request belongs to their team.
-    # Currently, we trust the role. 
-    
+    existing_request = leave_request_service.get_leave_request_by_id(request_id)
+    if not existing_request:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    # Get current user's employee record
+    current_employee = employee_service.get_employee_by_user_id(current_user.id)
+    if not current_employee:
+        raise HTTPException(status_code=404, detail="Employee record not found")
+
+    # Authorization checks
+    if current_user.role == "admin":
+        # Admin can update any request
+        pass
+    elif current_user.role in ["manager", "dean"]:
+        # Manager can only update requests from their subordinates (direct or indirect)
+        all_employees = employee_service.get_employees()
+
+        # Check if the request belongs to a subordinate
+        if not is_subordinate_of(existing_request.employee_id, current_employee.id, all_employees):
+            raise HTTPException(
+                status_code=403,
+                detail="Not authorized: You can only approve requests from your team members"
+            )
+    else:
+        # Regular employees can only update their own requests
+        if existing_request.employee_id != current_employee.id:
+            raise HTTPException(status_code=403, detail="Not authorized to update this request")
+
     updated_request = leave_request_service.update_leave_request(request_id, request_in)
     if not updated_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
@@ -330,7 +360,8 @@ def download_vacation_form(request_id: int,
         "annual": "إجازة اعتيادية",
         "sick": "مرضية",
         "unpaid": "بدون أجر",
-        "emergency": "طارئة"
+        "emergency": "طارئة",
+        "exams": "إجازة الامتحانات"
     }
 
     context = {
@@ -449,15 +480,19 @@ def download_dashboard_report(
 
     # Fetch Team Data if Manager/Admin - with period stats
     if current_user.role in ['manager', 'admin', 'dean']:
+        from backend.hierarchy import get_all_subordinates
+
         all_employees = employee_service.get_employees()
         team_members = []
         for emp in all_employees:
-            # Admin/Dean sees all (except self). Manager sees direct reports.
+            # Admin/Dean sees all (except self). Manager/Dean sees direct and indirect reports.
             is_team_member = False
-            if current_user.role == 'manager':
-                if emp.manager_id == employee.id:
+            if current_user.role in ['manager', 'dean']:
+                # Get all subordinates (direct and indirect)
+                subordinate_ids = get_all_subordinates(employee.id, all_employees, include_indirect=True)
+                if emp.id in subordinate_ids:
                     is_team_member = True
-            elif current_user.role in ['admin', 'dean']:
+            elif current_user.role == 'admin':
                 if emp.id != employee.id: # Exclude self
                     is_team_member = True
 
@@ -642,5 +677,51 @@ def download_attachment(
     
     if not target_path or not os.path.exists(target_path):
         raise HTTPException(status_code=404, detail="Attachment not found")
-        
+
     return FileResponse(target_path)
+
+
+# Template Upload Endpoints
+@app.post("/api/settings/template")
+async def upload_template(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload vacation request template (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Validate file type
+    if not file.filename.endswith('.docx'):
+        raise HTTPException(status_code=400, detail="Only .docx files allowed")
+
+    # Save to templates folder
+    template_path = Path("backend/templates/vacation_template.docx")
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        contents = await file.read()
+        with open(template_path, 'wb') as f:
+            f.write(contents)
+        return {"message": "Template uploaded successfully", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save template: {str(e)}")
+
+
+@app.get("/api/settings/template/status")
+def get_template_status(current_user: User = Depends(get_current_user)):
+    """Check if template exists"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    template_path = Path("backend/templates/vacation_template.docx")
+    exists = template_path.exists()
+
+    if exists:
+        stat = template_path.stat()
+        return {
+            "exists": True,
+            "uploaded_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+            "size_kb": round(stat.st_size / 1024, 2)
+        }
+    return {"exists": False}

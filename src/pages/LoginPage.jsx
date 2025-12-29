@@ -16,7 +16,8 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await login(email, password);
+    // Normalize email to lowercase for case-insensitive login
+    await login(email.toLowerCase(), password);
   };
 
   return (

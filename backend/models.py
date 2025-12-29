@@ -102,8 +102,8 @@ class EmployeeCreate(BaseModel):
     last_name_en: str
     position_ar: str
     position_en: str
-    unit_id: int
-    start_date: str # YYYY-MM-DD
+    unit_id: Optional[int] = None
+    start_date: Optional[str] = None  # YYYY-MM-DD
     monthly_vacation_earned: Optional[float] = 2.5
     manager_id: Optional[str] = None
 

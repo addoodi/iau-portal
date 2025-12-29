@@ -2,8 +2,8 @@ from docxtpl import DocxTemplate, InlineImage
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import parse_xml, register_element_cls
-from docx.oxml.ns import nsdecls
+from docx.oxml import parse_xml, register_element_cls, OxmlElement
+from docx.oxml.ns import nsdecls, qn
 from docx.oxml.shape import CT_Picture
 from docx.oxml.xmlchemy import BaseOxmlElement, OneAndOnlyOne
 from io import BytesIO
@@ -335,6 +335,35 @@ def format_date_for_report(date_str, date_system='gregorian', language='en'):
     except Exception as e:
         return date_str
 
+def set_paragraph_rtl(paragraph):
+    """Set a paragraph to RTL (right-to-left) orientation for Arabic text"""
+    pPr = paragraph._element.get_or_add_pPr()
+    bidi = OxmlElement('w:bidi')
+    bidi.set(qn('w:val'), '1')
+    pPr.append(bidi)
+
+def set_document_rtl(doc):
+    """Set document to RTL orientation for Arabic text"""
+    # Set RTL for all sections
+    for section in doc.sections:
+        sectPr = section._sectPr
+        bidi = sectPr.find(qn('w:bidi'))
+        if bidi is None:
+            bidi = OxmlElement('w:bidi')
+            bidi.set(qn('w:val'), '1')
+            sectPr.append(bidi)
+
+    # Set RTL for all paragraphs
+    for paragraph in doc.paragraphs:
+        set_paragraph_rtl(paragraph)
+
+    # Set RTL for paragraphs in tables
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    set_paragraph_rtl(paragraph)
+
 def create_dashboard_report(data):
     """
     Generates a comprehensive dashboard report with full language and calendar support.
@@ -511,6 +540,10 @@ def create_dashboard_report(data):
                         leave_row[3].text = f"{leave['duration']} {t['days']}"
 
                     doc.add_paragraph()  # Spacing between members
+
+    # Apply RTL formatting for Arabic after all content is added
+    if language == 'ar':
+        set_document_rtl(doc)
 
     file_stream = BytesIO()
     doc.save(file_stream)

@@ -35,9 +35,15 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
     setIsLoading(true);
     setError('');
     try {
-      // Basic validation
+      // Basic validation with conditional requirements for admin role
       for (const key in formData) {
         if (key === 'password' && initialUser && formData[key] === '') continue; // Skip password check for edit
+
+        // For admin role, skip validation for unit_id, manager_id, and start_date
+        if (formData.role === 'admin' && (key === 'unit_id' || key === 'manager_id' || key === 'start_date')) {
+          continue;
+        }
+
         if (formData[key] === '' || formData[key] === null) {
           throw new Error(`Please fill in all fields. Missing: ${key}`);
         }

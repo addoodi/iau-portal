@@ -4,7 +4,7 @@ import { usePortal } from '../context/PortalContext';
 import { downloadRequestForm, API_BASE_URL } from '../api';
 
 export default function MyRequests() {
-  const { user, requests, t, updateRequestStatus, formatDate } = usePortal();
+  const { user, requests, t, updateRequestStatus, formatDate, isRTL } = usePortal();
   const myRequests = requests.filter(r => r.employee_id === user.id);
 
   const generateDocx = async (req) => {
@@ -61,7 +61,11 @@ export default function MyRequests() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-700">{formatDate(req.start_date)} → {formatDate(req.end_date)}</div>
+                    <div className="text-sm text-gray-700">
+                      {formatDate(req.start_date)}
+                      {isRTL ? ' ← ' : ' → '}
+                      {formatDate(req.end_date)}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border
@@ -78,8 +82,14 @@ export default function MyRequests() {
                   </td>
                   <td className="px-6 py-4 text-right flex justify-end gap-2">
                     {(req.status === 'Approved' || req.status === 'Rejected') && ( // Allow download for Approved and Rejected
-                      <button onClick={() => generateDocx(req)} className="text-[#0f5132] hover:bg-green-50 p-2 rounded-full" title={t.downloadDoc}>
+                      <button
+                        onClick={() => generateDocx(req)}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-[#0f5132] hover:bg-green-50 rounded-lg font-medium transition-colors ${
+                          isRTL ? 'flex-row-reverse' : ''
+                        }`}
+                      >
                         <Download size={18} />
+                        <span className="text-sm">{t.downloadForm}</span>
                       </button>
                     )}
                     {req.status === 'Pending' && (

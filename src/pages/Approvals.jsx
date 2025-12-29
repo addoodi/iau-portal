@@ -3,6 +3,7 @@ import { CheckCircle, AlertTriangle, Paperclip } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 import { API_BASE_URL } from '../api';
 import DashboardTimeline from '../components/DashboardTimeline';
+import { getAllSubordinates } from '../utils/hierarchy';
 
 export default function Approvals() {
   const { user, employees, requests, updateRequestStatus, t, isRTL, formatDate } = usePortal();
@@ -15,14 +16,18 @@ export default function Approvals() {
   // "user" in context is the Employee profile (after refreshData), so user.id is "IAU-XXX".
   // user.role comes from the User account.
 
-  // Filter employees who report to this user
+  // Filter employees who report to this user (direct and indirect for managers/deans)
   const teamEmployeeIds = employees
     .filter(e => {
-        // Direct reports
-        if (e.manager_id === user?.id) return true;
-        // Admins and Deans see all (or specific logic) - for now let's stick to manager hierarchy + Admin override
-        if (user?.role === 'admin' && e.id !== user.id) return true; 
-        if (user?.role === 'dean' && e.id !== user.id) return true;
+        // Admins see all except themselves
+        if (user?.role === 'admin' && e.id !== user.id) return true;
+
+        // Managers and Deans see direct and indirect reports
+        if ((user?.role === 'manager' || user?.role === 'dean') && user?.id) {
+            const subordinateIds = getAllSubordinates(user.id, employees, true);
+            return subordinateIds.includes(e.id);
+        }
+
         return false;
     })
     .map(e => e.id);

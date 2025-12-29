@@ -4,6 +4,7 @@ import { usePortal } from '../context/PortalContext';
 import { downloadDashboardReport } from '../api';
 import { useNavigate } from 'react-router-dom';
 import DashboardTimeline from '../components/DashboardTimeline';
+import { getAllSubordinates } from '../utils/hierarchy';
 
 export default function Dashboard() {
   const { user, employees, requests, t, lang, attendance, loading, formatDate, dateSystem } = usePortal();
@@ -25,10 +26,14 @@ export default function Dashboard() {
   // Contract Warning
   const showContractWarning = user.days_remaining_in_contract !== undefined && user.days_remaining_in_contract <= 40;
 
-  // Filter team members (Admin sees all except themselves, Manager sees their direct reports)
+  // Filter team members (Admin sees all except themselves, Manager sees direct and indirect reports)
   const teamMembers = employees.filter(u => {
       if (user.role?.toLowerCase() === 'admin') return u.id !== user.id;
-      if (user.role?.toLowerCase() === 'manager') return u.manager_id === user.id;
+      if (user.role?.toLowerCase() === 'manager') {
+          // Get all subordinates (direct and indirect) using hierarchy utility
+          const subordinateIds = getAllSubordinates(user.id, employees, true);
+          return subordinateIds.includes(u.id);
+      }
       return false;
   });
 
@@ -37,7 +42,10 @@ export default function Dashboard() {
     if (user.role?.toLowerCase() === 'admin') return r.status === 'Pending';
     if (user.role?.toLowerCase() === 'manager') {
       const employee = employees.find(e => e.id === r.employee_id);
-      return r.status === 'Pending' && employee?.manager_id === user.id;
+      if (!employee) return false;
+      // Check if employee is a subordinate (direct or indirect)
+      const subordinateIds = getAllSubordinates(user.id, employees, true);
+      return r.status === 'Pending' && subordinateIds.includes(employee.id);
     }
     return false;
   });
@@ -212,7 +220,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-3 gap-3 mb-3">
             <div className="p-3 bg-green-50 rounded-lg text-center">
               <div className="text-2xl font-bold text-[#0f5132]">{totalEarned}</div>
-              <div className="text-xs text-gray-500 font-medium">{t.earned}</div>
+              <div className="text-xs text-gray-500 font-medium">{t.totalEarned}</div>
             </div>
             <div className="p-3 bg-red-50 rounded-lg text-center">
               <div className="text-2xl font-bold text-red-600">{usedBalance}</div>

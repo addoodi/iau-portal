@@ -37,15 +37,15 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
   return (
     <aside className={`w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm z-20 ${isOpen ? 'flex' : 'hidden'} md:flex`}>
       <div className="p-6 border-b border-gray-100">
-        <h2 className="text-[#0f5132] font-bold text-lg leading-tight">
+        <h2 className="text-[#0f5132] font-semibold text-base leading-tight">
           {t.appTitle}
         </h2>
-        <p className="text-xs text-[#c5a017] mt-1 font-semibold">{t.appSubtitle}</p>
+        <p className="text-sm text-[#c5a017] mt-1 font-medium">{t.appSubtitle}</p>
       </div>
 
       <div className="p-4">
         <div className="text-xs font-semibold text-gray-400 uppercase mb-2 tracking-wider">{t.welcome}</div>
-        <div className="text-[#1e2c54] font-bold text-lg">{(lang === 'ar' ? user.name_ar : user.name_en)?.split(' ')[0]}</div>
+        <div className="text-[#1e2c54] font-semibold text-base">{(lang === 'ar' ? user.name_ar : user.name_en)?.split(' ')[0]}</div>
         <div className="text-xs text-gray-500">{t[`role_${user.role?.toLowerCase()}`] || user.role}</div>
       </div>
 

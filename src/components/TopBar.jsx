@@ -37,7 +37,7 @@ export default function TopBar({ toggleSidebar }) {
         <div className="w-px h-6 bg-gray-200 mx-1"></div>
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <div className="text-sm font-bold text-[#1e2c54]">{lang === 'ar' ? user.name_ar : user.name_en}</div>
+            <div className="text-base font-semibold text-[#1e2c54]">{lang === 'ar' ? user.name_ar : user.name_en}</div>
             <div className="text-xs text-gray-500">{t[`role_${user.role?.toLowerCase()}`] || user.role}</div>
           </div>
           <div className="h-10 w-10 rounded-full bg-[#0f5132] text-white flex items-center justify-center font-bold text-lg shadow-md border-2 border-white">

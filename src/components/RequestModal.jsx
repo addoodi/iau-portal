@@ -21,7 +21,7 @@ export default function RequestModal({ onClose }) {
   };
 
   const days = calculateDays();
-  const isValid = days > 0 && reason.length > 3 && (type !== 'annual' || days <= user.vacation_balance);
+  const isValid = days > 0 && (type !== 'annual' || days <= user.vacation_balance);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,8 +54,8 @@ export default function RequestModal({ onClose }) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
            <div>
              <label className="block text-sm font-bold text-gray-700 mb-2">{t.requestType}</label>
-             <div className="grid grid-cols-3 gap-2">
-               {['annual', 'sick', 'emergency'].map((rtype) => (
+             <div className="grid grid-cols-4 gap-2">
+               {['annual', 'sick', 'emergency', 'exams'].map((rtype) => (
                  <button 
                    key={rtype}
                    type="button"

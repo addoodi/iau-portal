@@ -155,7 +155,20 @@ export const TRANSLATIONS = {
     save: "Save",
     totalEarned: "Total Earned",
     edit: "Edit",
-    addUnit: "Add Unit"
+    addUnit: "Add Unit",
+    templateManagement: "Template Management",
+    currentTemplate: "Current Template Status",
+    templateExists: "Template exists",
+    uploadedAt: "Uploaded",
+    noTemplate: "No template uploaded",
+    uploadNewTemplate: "Upload New Template",
+    templateHint: "Upload a .docx file to be used as the vacation request form template",
+    templateUploadSuccess: "Template uploaded successfully",
+    uploading: "Uploading...",
+    upload: "Upload",
+    exams: "Exams Leave",
+    downloadForm: "Download Form",
+    requiredFieldsForRole: "Unit, Manager, and Start Date are required for non-admin roles"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -312,6 +325,19 @@ export const TRANSLATIONS = {
     save: "حفظ",
     totalEarned: "المجموع المستحق",
     edit: "تعديل",
-    addUnit: "إضافة وحدة"
+    addUnit: "إضافة وحدة",
+    templateManagement: "إدارة القوالب",
+    currentTemplate: "حالة القالب الحالي",
+    templateExists: "القالب موجود",
+    uploadedAt: "تم الرفع",
+    noTemplate: "لم يتم رفع قالب",
+    uploadNewTemplate: "رفع قالب جديد",
+    templateHint: "قم برفع ملف .docx ليتم استخدامه كقالب لنموذج طلب الإجازة",
+    templateUploadSuccess: "تم رفع القالب بنجاح",
+    uploading: "جاري الرفع...",
+    upload: "رفع",
+    exams: "إجازة الامتحانات",
+    downloadForm: "تحميل النموذج",
+    requiredFieldsForRole: "الوحدة والمدير وتاريخ البداية مطلوبة للأدوار غير الإدارية"
   }
 };
