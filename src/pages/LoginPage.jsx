@@ -23,13 +23,16 @@ export default function LoginPage() {
   return (
     <div className={`min-h-screen flex items-center justify-center bg-[#f8f9fa] ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md border-t-4 border-[#0f5132]">
-        <div className="flex justify-between items-center mb-8">
-           <img src="/logo.png" alt="IAU Logo" className="h-16 object-contain" />
+        <div className="flex justify-end mb-4">
            <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="text-[#0f5132] font-bold text-sm">
              {lang === 'en' ? 'العربية' : 'English'}
            </button>
         </div>
-        
+
+        <div className="flex justify-center mb-8">
+           <img src="/logo.png" alt="IAU Logo" className="w-full max-w-xs object-contain" />
+        </div>
+
         <h2 className="text-2xl font-bold text-[#1e2c54] mb-2">{t.login}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
