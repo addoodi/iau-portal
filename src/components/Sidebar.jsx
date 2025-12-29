@@ -36,11 +36,8 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
   return (
     <aside className={`w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm z-20 ${isOpen ? 'flex' : 'hidden'} md:flex`}>
-      <div className="p-6 border-b border-gray-100">
-        <h2 className="text-[#0f5132] font-semibold text-base leading-tight">
-          {t.appTitle}
-        </h2>
-        <p className="text-sm text-[#c5a017] mt-1 font-medium">{t.appSubtitle}</p>
+      <div className="p-6 border-b border-gray-100 flex items-center justify-center">
+        <img src="/logo.png" alt="IAU Logo" className="h-20 object-contain" />
       </div>
 
       <div className="p-4">

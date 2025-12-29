@@ -24,7 +24,7 @@ export default function LoginPage() {
     <div className={`min-h-screen flex items-center justify-center bg-[#f8f9fa] ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md border-t-4 border-[#0f5132]">
         <div className="flex justify-between items-center mb-8">
-           <img src="https://www.iau.edu.sa/sites/default/files/iau_logo_new.png" alt="IAU Logo" className="h-16 object-contain" onError={(e) => e.target.style.display='none'} />
+           <img src="/logo.png" alt="IAU Logo" className="h-16 object-contain" />
            <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="text-[#0f5132] font-bold text-sm">
              {lang === 'en' ? 'العربية' : 'English'}
            </button>
