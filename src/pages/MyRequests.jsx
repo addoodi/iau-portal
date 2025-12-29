@@ -80,7 +80,7 @@ export default function MyRequests() {
                         </div>
                     )}
                   </td>
-                  <td className={`px-6 py-4 flex gap-2 ${isRTL ? 'text-left justify-start' : 'text-right justify-end'}`}>
+                  <td className={`px-6 py-4 flex gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}>
                     {(req.status === 'Approved' || req.status === 'Rejected') && ( // Allow download for Approved and Rejected
                       <button
                         onClick={() => generateDocx(req)}
