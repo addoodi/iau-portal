@@ -31,12 +31,22 @@ def get_all_subordinates(
         >>> # Returns [manager2_id, employee_id]
     """
     subordinate_ids: Set[str] = set()
+    visited: Set[str] = set()  # Prevent infinite loops from circular references
 
     def find_subordinates(mgr_id: str):
+        # Prevent infinite recursion from circular references
+        if mgr_id in visited:
+            return
+        visited.add(mgr_id)
+
         # Find direct reports
         direct_reports = [emp for emp in all_employees if emp.manager_id == mgr_id]
 
         for employee in direct_reports:
+            # Skip if this would create a circular reference
+            if employee.id == mgr_id:
+                continue
+
             subordinate_ids.add(employee.id)
 
             # Recursively find their subordinates if include_indirect is True
