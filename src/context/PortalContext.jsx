@@ -18,6 +18,7 @@ import {
   deleteSignature as apiDeleteSignature,
   getTodayAttendance as apiGetTodayAttendance,
   deleteUser as apiDeleteUser,
+  getTokenStorageKey,
 } from '../api';
 
 const PortalContext = createContext();
@@ -36,7 +37,7 @@ export const PortalProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('token');
+    localStorage.removeItem(getTokenStorageKey());
   };
 
   const toggleDateSystem = () => {
@@ -131,7 +132,7 @@ export const PortalProvider = ({ children }) => {
         setUser(loggedInUser);
       } catch (err) {
         setUser(null);
-        localStorage.removeItem('token');
+        localStorage.removeItem(getTokenStorageKey());
       } finally {
         setLoading(false);
       }
@@ -163,7 +164,7 @@ export const PortalProvider = ({ children }) => {
     } catch (error) {
       console.error("Login failed:", error);
       setError(error.message || 'Invalid credentials');
-      localStorage.removeItem('token');
+      localStorage.removeItem(getTokenStorageKey());
       setUser(null);
       setLoading(false);
       return false;

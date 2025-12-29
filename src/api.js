@@ -6,9 +6,15 @@ export const API_BASE_URL = isDevelopment
   ? 'http://localhost:8000/api'
   : '/api';
 
+// Environment-specific token storage key to prevent conflicts between local and hosted instances
+const TOKEN_STORAGE_KEY = isDevelopment ? 'iau_token_dev' : 'iau_token_prod';
+
+// Export the token key for use in other files
+export const getTokenStorageKey = () => TOKEN_STORAGE_KEY;
+
 // A utility to get the token from localStorage
 const getToken = () => {
-    const tokenData = localStorage.getItem('token');
+    const tokenData = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (!tokenData) return null;
     try {
         const { access_token } = JSON.parse(tokenData);
@@ -70,7 +76,7 @@ export const login = async (email, password) => {
     });
     const data = await handleResponse(response);
     // Store the token upon successful login
-    localStorage.setItem('token', JSON.stringify(data));
+    localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(data));
     return data;
 };
 
