@@ -13,7 +13,7 @@ const TOKEN_STORAGE_KEY = isDevelopment ? 'iau_token_dev' : 'iau_token_prod';
 export const getTokenStorageKey = () => TOKEN_STORAGE_KEY;
 
 // A utility to get the token from localStorage
-const getToken = () => {
+export const getToken = () => {
     const tokenData = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (!tokenData) return null;
     try {
