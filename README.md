@@ -1,70 +1,351 @@
-# Getting Started with Create React App
+# IAU Portal - Electronic Services Portal
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A comprehensive web-based employee management system for the Institute of Innovation and Entrepreneurship. The portal streamlines leave request management, attendance tracking, and administrative workflows with full bilingual support (English/Arabic).
 
-## Available Scripts
+## 🌟 Features
 
-In the project directory, you can run:
+### Employee Self-Service
+- **Leave Request Management**: Submit and track vacation requests (annual, sick, emergency)
+- **Vacation Balance Tracking**: Real-time vacation balance with earned/used/available breakdown
+- **Digital Signatures**: Upload and manage digital signatures for automated document signing
+- **Personal Dashboard**: View contract status, upcoming expirations, and attendance record
+- **Bilingual Interface**: Full support for English and Arabic with RTL layout
 
-### `npm start`
+### Manager Features
+- **Team Timeline View**: 60-day scrollable calendar showing team availability
+- **Approval Workflow**: Review and approve/reject leave requests with conflict detection
+- **Employee Detail View**: View team member vacation balances and contract dates
+- **Contract Date Management**: Update employee contract start dates with automatic recalculation
+- **Team Status Indicators**: Visual highlighting of team members on leave vs. present
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Admin Features
+- **User Management**: Create and manage user accounts with role-based access
+- **Unit Management**: Organize employees into departments/units with delete protection
+- **Email Configuration**: Configure SMTP settings for automated notifications
+- **System Settings**: Manage site-wide configuration and preferences
+- **Dashboard Reports**: Generate comprehensive reports with multiple time period filters
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Automated Notifications
+- **Contract Expiration Reminders**: 40-day advance notice before contract end
+- **Critical Warnings**: Alerts when vacation balance equals remaining contract days
+- **Daily Scheduler**: Automated email notifications at 8:00 AM
+- **Duplicate Prevention**: Smart tracking to avoid sending duplicate notifications
 
-### `npm test`
+### Calendar System
+- **Dual Calendar Support**: Gregorian and Hijri calendar systems
+- **Interactive Timeline**: Visual representation of team availability
+- **Conflict Detection**: Automatic detection of overlapping leave requests
+- **Color-Coded Status**: Easy identification of approved, pending, and rejected requests
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🛠️ Tech Stack
 
-### `npm run build`
+### Frontend
+- **React 19.2** - Modern UI framework
+- **React Router v7** - Client-side routing
+- **Tailwind CSS** - Utility-first styling
+- **Vite** - Fast build tool and dev server
+- **Lucide React** - Icon library
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Backend
+- **FastAPI** - High-performance Python web framework
+- **Pydantic** - Data validation and settings management
+- **ReportLab** - PDF document generation
+- **Python Email** - SMTP email service
+- **Schedule** - Task scheduling for automated jobs
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Infrastructure
+- **Docker & Docker Compose** - Containerized deployment
+- **Nginx** - Reverse proxy and static file serving
+- **CSV Storage** - Lightweight data persistence
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 📋 Prerequisites
 
-### `npm run eject`
+- **Node.js** 18+ and npm (for local development)
+- **Python** 3.11+ (for local development)
+- **Docker & Docker Compose** (for production deployment)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 🚀 Quick Start
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Option 1: Docker Deployment (Recommended for Production)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1. **Clone the repository**
+```bash
+git clone https://github.com/addoodi/iau-portal.git
+cd iau-portal
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+2. **Create data directories**
+```bash
+mkdir -p /home/addoodi/appdata/iau-portal/data
+mkdir -p /home/addoodi/appdata/iau-portal/templates
+```
 
-## Learn More
+3. **Configure environment** (optional)
+```bash
+cp .env.example .env
+# Edit .env to customize port (default: 3000)
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+4. **Start the application**
+```bash
+docker-compose up -d
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+5. **Access the portal**
+- Open your browser to `http://localhost:3000`
+- First-time setup will prompt you to create an admin account
 
-### Code Splitting
+6. **View logs**
+```bash
+docker-compose logs -f
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+7. **Stop the application**
+```bash
+docker-compose down
+```
 
-### Analyzing the Bundle Size
+### Option 2: Local Development
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+#### Backend Setup
+```bash
+# Navigate to project root
+cd iau-portal
 
-### Making a Progressive Web App
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+# Install dependencies
+pip install -r requirements.txt
 
-### Advanced Configuration
+# Start backend server
+uvicorn backend.main:app --reload --port 8000
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+#### Frontend Setup
+```bash
+# In a new terminal, navigate to project root
+cd iau-portal
 
-### Deployment
+# Install dependencies
+npm install
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+# Start development server
+npm start
+```
 
-### `npm run build` fails to minify
+The application will be available at:
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8000`
+- API Documentation: `http://localhost:8000/docs`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+# Frontend Port (Docker deployment)
+FRONTEND_PORT=3000
+
+# Backend Configuration
+BACKEND_HOST=0.0.0.0
+BACKEND_PORT=8000
+
+# Email Configuration (optional - can be set via UI)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@example.com
+SMTP_PASSWORD=your-app-password
+SENDER_EMAIL=noreply@example.com
+```
+
+### Email Setup
+
+1. Navigate to **Site Settings** → **Email Settings**
+2. Configure SMTP server details
+3. Test connection
+4. Save settings
+
+For Gmail:
+- Enable 2-factor authentication
+- Generate an [App Password](https://support.google.com/accounts/answer/185833)
+- Use the app password in SMTP_PASSWORD
+
+### Notification Scheduler
+
+To run automated contract expiration notifications:
+
+```bash
+python run_scheduler.py
+```
+
+Or run as a background service:
+```bash
+nohup python run_scheduler.py > scheduler.log 2>&1 &
+```
+
+## 📁 Project Structure
+
+```
+iau-portal/
+├── backend/
+│   ├── data/              # CSV data storage
+│   │   ├── employees.csv
+│   │   ├── users.csv
+│   │   ├── leave_requests.csv
+│   │   ├── units.csv
+│   │   └── sent_notifications.json
+│   ├── templates/         # Document templates
+│   ├── email_templates.py # Email HTML templates
+│   ├── notification_scheduler.py
+│   ├── main.py           # FastAPI application
+│   ├── models.py         # Pydantic models
+│   ├── services.py       # Business logic
+│   ├── repositories.py   # Data access layer
+│   └── auth.py           # Authentication
+├── src/
+│   ├── components/       # React components
+│   ├── pages/           # Page components
+│   ├── context/         # React context (state)
+│   ├── utils/           # Utilities and translations
+│   └── api.js           # API client
+├── public/              # Static assets
+├── docker-compose.yml   # Docker orchestration
+├── Dockerfile.backend   # Backend container
+├── Dockerfile.frontend  # Frontend container
+└── nginx.conf          # Nginx configuration
+```
+
+## 👥 User Roles
+
+### Employee
+- Submit leave requests
+- View personal vacation balance
+- Track request status
+- Upload digital signature
+- Change password
+
+### Manager
+- All employee features
+- Approve/reject team leave requests
+- View team timeline and availability
+- Update team member contract dates
+- Conflict detection for team requests
+
+### Admin
+- All manager features
+- Create and manage users
+- Manage organizational units
+- Configure email settings
+- Access all leave requests
+- Generate system reports
+
+## 🔐 Security
+
+- **JWT Authentication**: Secure token-based authentication
+- **Password Hashing**: Bcrypt password encryption
+- **Role-Based Access Control**: Granular permission system
+- **HTTPS Ready**: Nginx reverse proxy supports SSL/TLS
+- **Input Validation**: Pydantic schema validation
+
+## 📊 Data Persistence
+
+All data is stored in CSV files in the `/backend/data` directory:
+- User accounts and authentication
+- Employee profiles and contracts
+- Leave requests and history
+- Organizational units
+- Email settings
+
+**Backup Recommendation**: Regularly backup the data directory:
+```bash
+tar -czf iau-portal-backup-$(date +%Y%m%d).tar.gz /home/addoodi/appdata/iau-portal/data
+```
+
+## 🐛 Troubleshooting
+
+### Port Already in Use
+```bash
+# Change FRONTEND_PORT in .env
+FRONTEND_PORT=3001
+```
+
+### Email Not Sending
+1. Verify SMTP settings in Site Settings
+2. Check email service allows SMTP
+3. For Gmail, ensure app password is used
+4. Check firewall/security group settings
+
+### Docker Volume Permissions
+```bash
+# Ensure correct ownership
+sudo chown -R 1000:1000 /home/addoodi/appdata/iau-portal/
+```
+
+### Reset Admin Password
+```bash
+# Access backend container
+docker exec -it iau-portal-backend bash
+
+# Run password reset script (if implemented)
+python scripts/reset_admin.py
+```
+
+## 📝 Development
+
+### Running Tests
+```bash
+# Backend tests
+pytest
+
+# Frontend tests
+npm test
+```
+
+### Building for Production
+```bash
+# Frontend build
+npm run build
+
+# Docker build
+docker-compose build
+```
+
+### Code Style
+- **Python**: Follow PEP 8
+- **JavaScript/React**: ESLint configuration
+- **Commits**: Conventional Commits format
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is proprietary software developed for the Institute of Innovation and Entrepreneurship.
+
+## 📧 Support
+
+For issues and questions:
+- Create an issue on GitHub
+- Contact the development team
+
+## 🙏 Acknowledgments
+
+- Institute of Innovation and Entrepreneurship
+- Built with [Claude Code](https://claude.com/claude-code)
+
+---
+
+**Version**: 1.0.0
+**Last Updated**: December 2024
+**Maintainer**: IAU Development Team
