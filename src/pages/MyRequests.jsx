@@ -44,7 +44,7 @@ export default function MyRequests() {
               <th className="px-6 py-4">{t.type}</th>
               <th className="px-6 py-4">{t.date}</th>
               <th className="px-6 py-4">{t.status}</th>
-              <th className="px-6 py-4 text-right">{t.actions}</th>
+              <th className={`px-6 py-4 ${isRTL ? 'text-left' : 'text-right'}`}>{t.actions}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -80,7 +80,7 @@ export default function MyRequests() {
                         </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right flex justify-end gap-2">
+                  <td className={`px-6 py-4 flex gap-2 ${isRTL ? 'text-left justify-start' : 'text-right justify-end'}`}>
                     {(req.status === 'Approved' || req.status === 'Rejected') && ( // Allow download for Approved and Rejected
                       <button
                         onClick={() => generateDocx(req)}

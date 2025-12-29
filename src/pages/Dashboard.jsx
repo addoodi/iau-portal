@@ -181,7 +181,9 @@ export default function Dashboard() {
             <div>
                 <h3 className="font-bold text-orange-800 text-lg">{t.contractExpiring || "Contract Expiring Soon"}</h3>
                 <p className="text-sm text-orange-700 mt-1">
-                    {t.contractWarningMessage || `Your contract ends in ${user.days_remaining_in_contract} days. Please note that you have ${availableBalance} vacation days remaining, which will be lost if not used before the contract renewal.`}
+                    {(t.contractWarningMessage || "Your contract ends in {days} days. Please note that you have {balance} vacation days remaining, which will be lost if not used before the contract renewal.")
+                      .replace('{days}', user.days_remaining_in_contract)
+                      .replace('{balance}', availableBalance)}
                 </p>
             </div>
         </div>
