@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FileText, CheckCircle, Users, Settings, LogOut, Menu, X, Building2 } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 
 const HorizontalNav = ({ user, onLogout }) => {
   const location = useLocation();
-  const { lang, t, isRTL, logout } = usePortal();
+  const { lang, t, isRTL } = usePortal();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -29,57 +29,60 @@ const HorizontalNav = ({ user, onLogout }) => {
     ),
   ];
 
-  const handleLogout = async () => {
-    await logout();
-    onLogout();
-  };
-
   return (
-    <nav className="bg-accent border-b border-gray-300">
-      <div className="px-6">
-        {/* Desktop Navigation (hidden on mobile) */}
-        <div className="hidden md:flex items-center gap-1">
-          {/* Navigation Links */}
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+    <>
+      <nav className="bg-primary">
+        <div className="px-6">
+          {/* Desktop Navigation (hidden on mobile) */}
+          <div className="hidden md:flex items-center">
+            {/* Navigation Links */}
+            {navItems.map((item, index) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-2 px-6 py-4 transition-colors border-b-2 ${
-                  isActive
-                    ? 'bg-primary text-white border-primary'
-                    : 'text-gray-700 border-transparent hover:bg-primary hover:text-white'
-                } ${isRTL ? 'flex-row-reverse' : ''}`}
-              >
-                <Icon size={20} />
-                <span className="font-medium text-sm">{item.label}</span>
-              </NavLink>
-            );
-          })}
+              return (
+                <React.Fragment key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    style={{
+                      backgroundColor: isActive ? '#015150' : 'transparent',
+                      color: isActive ? '#FFFFFF' : '#0F1734'
+                    }}
+                    className={`flex items-center gap-2 px-6 py-4 transition-colors hover:bg-[#015150] hover:text-white ${
+                      isRTL ? 'flex-row-reverse' : ''
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium text-sm">{item.label}</span>
+                  </NavLink>
+                  {index < navItems.length - 1 && (
+                    <div className="h-8 w-px bg-[#1a2d4f]" style={{ opacity: 0.3 }}></div>
+                  )}
+                </React.Fragment>
+              );
+            })}
 
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
-            className={`flex items-center gap-2 px-6 py-4 text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors ml-auto ${
-              isRTL ? 'flex-row-reverse mr-auto ml-0' : ''
-            }`}
-          >
-            <LogOut size={20} />
-            <span className="font-medium text-sm">{t.logout}</span>
-          </button>
-        </div>
+            {/* User Info */}
+            <div className={`flex items-center gap-2 ml-auto px-6 py-4 text-white ${isRTL ? 'flex-row-reverse mr-auto ml-0' : ''}`}>
+              <div className={isRTL ? 'text-right' : 'text-left'}>
+                <div className="text-sm font-medium">
+                  {lang === 'ar' ? user.name_ar : user.name_en}
+                </div>
+                <div className="text-xs opacity-75">
+                  {lang === 'ar' ? user.position_ar : user.position_en}
+                </div>
+              </div>
+            </div>
+          </div>
 
         {/* Mobile Navigation */}
         <div className="md:hidden">
           {/* Mobile Navigation Toggle */}
           <div className="flex items-center justify-between py-4">
-            <span className="font-medium text-gray-700">{t.menu || 'القائمة'}</span>
+            <span className="font-medium text-white">{t.menu || 'القائمة'}</span>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-gray-700"
+              className="text-white"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -97,36 +100,28 @@ const HorizontalNav = ({ user, onLogout }) => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                      isActive
-                        ? 'bg-primary text-white'
-                        : 'text-gray-700 hover:bg-primary hover:text-white'
-                    } ${isRTL ? 'flex-row-reverse' : ''}`}
+                    style={{
+                      backgroundColor: isActive ? '#015150' : 'transparent',
+                      color: isActive ? '#FFFFFF' : '#0F1734'
+                    }}
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[#015150] hover:text-white ${
+                      isRTL ? 'flex-row-reverse' : ''
+                    }`}
                   >
                     <Icon size={20} />
                     <span className="font-medium text-sm">{item.label}</span>
                   </NavLink>
                 );
               })}
-
-              {/* Mobile Logout */}
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleLogout();
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors ${
-                  isRTL ? 'flex-row-reverse' : ''
-                }`}
-              >
-                <LogOut size={20} />
-                <span className="font-medium text-sm">{t.logout}</span>
-              </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Separator line - magenta/teal accent */}
+      <div className="h-[10px]" style={{ backgroundColor: '#015150' }}></div>
     </nav>
+    </>
   );
 };
 
