@@ -47,7 +47,7 @@ const HorizontalNav = ({ user, onLogout }) => {
                 className={`flex items-center gap-2 px-6 py-4 transition-colors border-b-2 ${
                   isActive
                     ? 'bg-primary text-white border-primary'
-                    : 'text-gray-700 border-transparent hover:bg-primary/10'
+                    : 'text-gray-700 border-transparent hover:bg-primary hover:text-white'
                 } ${isRTL ? 'flex-row-reverse' : ''}`}
               >
                 <Icon size={20} />
@@ -96,7 +96,7 @@ const HorizontalNav = ({ user, onLogout }) => {
                     className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                       isActive
                         ? 'bg-primary text-white'
-                        : 'text-gray-700 hover:bg-primary/10'
+                        : 'text-gray-700 hover:bg-primary hover:text-white'
                     } ${isRTL ? 'flex-row-reverse' : ''}`}
                   >
                     <Icon size={20} />

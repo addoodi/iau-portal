@@ -9,20 +9,12 @@ const HeaderBanner = ({ user, onLogout }) => {
     <div className="bg-primary text-white">
       {/* Top Bar with Logo and University Name */}
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-        <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
           <img
             src="/logo.png"
             alt="IAU Logo"
-            className="h-16 w-auto"
+            className="h-24 w-auto"
           />
-          <div className={isRTL ? 'text-right' : 'text-left'}>
-            <h1 className="text-2xl font-bold font-arabic">
-              {t.universityName || 'جامعة الإمام عبدالرحمن بن فيصل'}
-            </h1>
-            <p className="text-sm opacity-90">
-              {t.portalSubtitle || 'بوابة الخدمات الإلكترونية'}
-            </p>
-          </div>
         </div>
 
         {/* Language, Date System & User Info */}
