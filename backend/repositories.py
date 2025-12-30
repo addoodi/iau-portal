@@ -139,8 +139,17 @@ class CSVEmployeeRepository(BaseRepository):
 
     def _load_df(self):
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            return pd.read_csv(self.file_path)
-        return pd.DataFrame(columns=['id', 'user_id', 'first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'position_ar', 'position_en', 'unit_id', 'manager_id', 'start_date', 'monthly_vacation_earned', 'signature_path'])
+            df = pd.read_csv(self.file_path)
+
+            # Auto-migration: Add contract_auto_renewed column if missing
+            if 'contract_auto_renewed' not in df.columns:
+                df['contract_auto_renewed'] = False
+                # Save the updated CSV with the new column
+                df.to_csv(self.file_path, index=False)
+                print("Migration: Added 'contract_auto_renewed' column to employees.csv")
+
+            return df
+        return pd.DataFrame(columns=['id', 'user_id', 'first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'position_ar', 'position_en', 'unit_id', 'manager_id', 'start_date', 'monthly_vacation_earned', 'signature_path', 'contract_auto_renewed'])
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
