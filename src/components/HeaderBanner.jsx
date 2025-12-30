@@ -1,9 +1,9 @@
 import { usePortal } from '../context/PortalContext';
-import logoImage from '../assets/images/logos/ud_logo.png';
-import bannerImage from '../assets/images/banners/eservices-banner2024.jpg';
+import { Calendar } from 'lucide-react';
+import bannerImage from '../assets/images/banners/dashboard_header.jpg';
 
 const HeaderBanner = ({ user, onLogout }) => {
-  const { lang, t, toggleLanguage, isRTL } = usePortal();
+  const { lang, t, toggleLanguage, isRTL, dateSystem, toggleDateSystem } = usePortal();
 
   return (
     <div className="bg-primary text-white">
@@ -11,7 +11,7 @@ const HeaderBanner = ({ user, onLogout }) => {
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <img
-            src={logoImage}
+            src="/logo.png"
             alt="IAU Logo"
             className="h-16 w-auto"
           />
@@ -25,8 +25,18 @@ const HeaderBanner = ({ user, onLogout }) => {
           </div>
         </div>
 
-        {/* Language & User Info */}
-        <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        {/* Language, Date System & User Info */}
+        <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          {/* Date System Toggle */}
+          <button
+            onClick={toggleDateSystem}
+            className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-xs transition-colors flex items-center gap-2"
+            title={dateSystem === 'gregorian' ? t.switchToHijri : t.switchToGregorian}
+          >
+            <Calendar size={16} />
+            {dateSystem === 'gregorian' ? (lang === 'ar' ? 'هجري' : 'Hijri') : (lang === 'ar' ? 'ميلادي' : 'Gregorian')}
+          </button>
+
           {/* Language Switcher */}
           <button
             onClick={toggleLanguage}
@@ -43,7 +53,7 @@ const HeaderBanner = ({ user, onLogout }) => {
                   {lang === 'ar' ? user.name_ar : user.name_en}
                 </div>
                 <div className="text-xs opacity-75">
-                  {t[user.role] || user.role}
+                  {lang === 'ar' ? user.position_ar : user.position_en}
                 </div>
               </div>
             </div>

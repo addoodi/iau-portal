@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FileText, CheckCircle, Users, Settings, LogOut, Menu, X } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
-import { logout } from '../api';
 
 const HorizontalNav = ({ user, onLogout }) => {
   const location = useLocation();
-  const { lang, t, isRTL } = usePortal();
+  const { lang, t, isRTL, logout } = usePortal();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
