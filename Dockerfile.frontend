@@ -2,6 +2,9 @@
 # Using latest LTS for Vite 7.3.0 compatibility (requires Node 20.19+ or 22.12+)
 FROM node:lts-alpine AS builder
 
+# Build argument to force rebuild when needed
+ARG CACHEBUST=1
+
 # Install git (needed for some npm packages)
 RUN apk add --no-cache git
 

@@ -1,6 +1,9 @@
 # Backend Dockerfile - FastAPI Application
 FROM python:3.11-slim
 
+# Build argument to force rebuild when needed
+ARG CACHEBUST=1
+
 # Set working directory
 WORKDIR /app
 
