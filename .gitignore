@@ -217,6 +217,18 @@ docker-compose.override.yml
 *.rar
 
 # ============================================
+# CLAUDE CODE ASSISTANT
+# ============================================
+
+# Ignore local settings (may contain credentials)
+.claude/settings.local.json
+.claude/.credentials.json
+
+# Keep plan files and documentation
+!.claude/*.md
+!.claude/plan*.md
+
+# ============================================
 # EXCEPTIONS (FORCE INCLUDE)
 # ============================================
 

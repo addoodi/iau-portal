@@ -66,7 +66,7 @@ export default function SiteSettings() {
 
   if (user?.role !== 'admin') {
     return (
-      <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-gray-100 text-center text-red-600">
+      <div className="max-w-2xl mx-auto p-6 bg-white border border-gray-200 text-center text-red-600">
         <AlertTriangle size={24} className="mx-auto mb-2" />
         <p>You are not authorized to view this page.</p>
       </div>
@@ -74,8 +74,8 @@ export default function SiteSettings() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-      <h2 className="text-xl font-bold text-[#1e2c54] mb-6">{t.templateManagement || 'Template Management'}</h2>
+    <div className="max-w-2xl mx-auto p-6 bg-white border border-gray-200">
+      <h2 className="text-xl font-bold text-primary mb-6">{t.templateManagement || 'Template Management'}</h2>
 
       {message && (
         <div className={`mb-4 p-3 rounded-md flex items-center gap-2 ${
@@ -120,12 +120,12 @@ export default function SiteSettings() {
             type="file"
             accept=".docx"
             onChange={(e) => setTemplateFile(e.target.files[0])}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0f5132] focus:border-transparent"
+            className="flex-1 px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
           />
           <button
             onClick={handleTemplateUpload}
             disabled={!templateFile || uploadingTemplate}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
           >
             <Upload size={18} />
             {uploadingTemplate ? (t.uploading || 'Uploading...') : (t.upload || 'Upload')}
@@ -138,7 +138,7 @@ export default function SiteSettings() {
 
       {/* Email Settings Note */}
       <div className="mt-8 pt-8 border-t border-gray-200">
-        <h3 className="text-lg font-semibold text-[#1e2c54] mb-2">Email Configuration</h3>
+        <h3 className="text-lg font-semibold text-primary mb-2">Email Configuration</h3>
         <p className="text-sm text-gray-600">
           Email settings are configured via environment variables in the <code className="bg-gray-100 px-2 py-1 rounded text-xs">.env</code> file.
           Contact your system administrator to update SMTP settings.

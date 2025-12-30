@@ -35,6 +35,10 @@ export const PortalProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const toggleLanguage = () => {
+    setLang(prev => prev === 'ar' ? 'en' : 'ar');
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(getTokenStorageKey());
@@ -324,7 +328,7 @@ export const PortalProvider = ({ children }) => {
   return (
     <PortalContext.Provider value={{
       user, users, employees, requests, units, attendance, lang, t, isRTL, loading, error,
-      setLang, login, logout, createRequest, updateRequestStatus, uploadSignature, deleteSignature,
+      setLang, toggleLanguage, login, logout, createRequest, updateRequestStatus, uploadSignature, deleteSignature,
       initializeAdmin, refreshData, addUnit, editUnit, deleteUnit, updateEmployee, deleteUser,
       dateSystem, toggleDateSystem, formatDate, isHijri
     }}>

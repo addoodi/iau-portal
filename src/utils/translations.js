@@ -180,7 +180,15 @@ export const TRANSLATIONS = {
     requiredFieldsForRole: "Unit, Manager, and Start Date are required for non-admin roles",
     employeeId: "Employee ID",
     employeeIdWarning: "Warning: Changing this will affect leave requests, manager references, and signature files",
-    footerBuiltBy: "Built by Raghad Alsharhan for inquiries and support contact +966562644739"
+    footerBuiltBy: "Built by Raghad Alsharhan for inquiries and support contact +966562644739",
+    universityName: "Imam Abdulrahman Bin Faisal University",
+    portalSubtitle: "E-Services Portal",
+    menu: "Menu",
+    logout: "Log Out",
+    employees: "Employees",
+    settings: "Settings",
+    admin: "Admin",
+    hijri: "Hijri"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -362,6 +370,14 @@ export const TRANSLATIONS = {
     requiredFieldsForRole: "الوحدة والمدير وتاريخ البداية مطلوبة للأدوار غير الإدارية",
     employeeId: "الرقم الوظيفي",
     employeeIdWarning: "تحذير: تغيير هذا سيؤثر على طلبات الإجازة ومراجع المدير وملفات التوقيع",
-    footerBuiltBy: "تم البناء بواسطة رغد الشرهان للاستفسارات والدعم تواصل على +966562644739"
+    footerBuiltBy: "تم البناء بواسطة رغد الشرهان للاستفسارات والدعم تواصل على +966562644739",
+    universityName: "جامعة الإمام عبدالرحمن بن فيصل",
+    portalSubtitle: "بوابة الخدمات الإلكترونية",
+    menu: "القائمة",
+    logout: "تسجيل الخروج",
+    employees: "الموظفون",
+    settings: "الإعدادات",
+    admin: "مدير",
+    hijri: "هجري"
   }
 };

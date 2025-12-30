@@ -76,17 +76,17 @@ export default function UserManagement() {
 
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="bg-white border border-gray-200">
 
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+        <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
 
-          <h2 className="text-xl font-bold text-[#1e2c54]">{t.userManagement}</h2>
+          <h2 className="text-xl font-bold text-primary">{t.userManagement}</h2>
 
-          <button 
+          <button
 
             onClick={() => setIsAddUserModalOpen(true)}
 
-            className="bg-[#c5a017] text-white px-3 py-1.5 rounded text-sm font-bold hover:bg-[#b08d15]"
+            className="bg-accent text-white px-3 py-1.5 text-sm font-bold hover:bg-accent-hover"
 
           >
 
@@ -124,7 +124,7 @@ export default function UserManagement() {
 
                   <td className="px-6 py-4">
 
-                    <div className="font-bold text-[#1e2c54]">{isRTL ? emp.name_ar : emp.name_en}</div>
+                    <div className="font-bold text-primary">{isRTL ? emp.name_ar : emp.name_en}</div>
 
                     <div className="text-xs text-gray-500">{isRTL ? emp.position_ar : emp.position_en}</div>
 
@@ -152,7 +152,7 @@ export default function UserManagement() {
 
                   <td className="px-6 py-4 text-right text-gray-400 space-x-2">
 
-                    <button onClick={() => handleEdit(emp)} className="hover:text-[#0f5132] font-medium text-sm">{t.edit || 'Edit'}</button>
+                    <button onClick={() => handleEdit(emp)} className="hover:text-primary font-medium text-sm">{t.edit || 'Edit'}</button>
 
                     {emp.user_id !== user.user_id && (
 

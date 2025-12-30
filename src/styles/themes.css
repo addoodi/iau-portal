@@ -1,0 +1,60 @@
+/* Base theme - Navy/Gold (IAU Default) */
+:root {
+  /* Primary Colors */
+  --color-primary: #0F1734;
+  --color-primary-hover: #1a2a4f;
+  --color-accent: #A1832D;
+  --color-accent-hover: #8A6F26;
+
+  /* Backgrounds */
+  --color-bg-page: #F4EEE0;
+  --color-bg-card: #FFFFFF;
+  --color-bg-sidebar: #0F1734;
+
+  /* Text */
+  --color-text-primary: #333333;
+  --color-text-secondary: #666666;
+  --color-text-white: #FFFFFF;
+
+  /* Borders */
+  --color-border: #DDDDDD;
+  --color-border-light: #EEEEEE;
+
+  /* Status Colors */
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-danger: #dc3545;
+  --color-info: #17a2b8;
+}
+
+/* Theme: Brown */
+[data-theme="brown"] {
+  --color-primary: #5C4033;
+  --color-primary-hover: #6d4c3f;
+  --color-accent: #A0826D;
+  --color-accent-hover: #8b7060;
+}
+
+/* Theme: Purple */
+[data-theme="purple"] {
+  --color-primary: #6F42C1;
+  --color-primary-hover: #8256d1;
+  --color-accent: #9B7EBD;
+  --color-accent-hover: #8769a8;
+}
+
+/* Theme: Green */
+[data-theme="green"] {
+  --color-primary: #0f5132;
+  --color-primary-hover: #1a6f4a;
+  --color-accent: #5FAD56;
+  --color-accent-hover: #4d9346;
+}
+
+/* Theme: Pink/Gold */
+[data-theme="pink"] {
+  --color-primary: #D81B60;
+  --color-primary-hover: #e8316e;
+  --color-accent: #F48FB1;
+  --color-accent-hover: #e57a9d;
+}

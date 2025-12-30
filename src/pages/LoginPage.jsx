@@ -21,10 +21,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center bg-[#f8f9fa] ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md border-t-4 border-[#0f5132]">
+    <div className={`min-h-screen flex items-center justify-center bg-bg-page ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="bg-white p-8 border border-gray-200 w-full max-w-md border-t-4 border-primary">
         <div className="flex justify-end mb-4">
-           <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="text-[#0f5132] font-bold text-sm">
+           <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="text-primary font-bold text-sm">
              {lang === 'en' ? 'العربية' : 'English'}
            </button>
         </div>
@@ -33,18 +33,18 @@ export default function LoginPage() {
            <img src="/logo.png" alt="IAU Logo" className="w-full max-w-xs object-contain" />
         </div>
 
-        <h2 className="text-2xl font-bold text-[#1e2c54] mb-2">{t.login}</h2>
+        <h2 className="text-2xl font-bold text-primary mb-2">{t.login}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t.username}</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-[#0f5132]" required />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border p-2 focus:ring-2 focus:ring-primary" required />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t.password}</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-[#0f5132]" required />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border p-2 focus:ring-2 focus:ring-primary" required />
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full bg-[#0f5132] text-white py-2 rounded-md font-medium hover:bg-[#0b3b25] disabled:bg-gray-400">
+          <button type="submit" disabled={loading} className="w-full bg-primary text-white py-2 font-medium hover:bg-primary-hover disabled:bg-gray-400">
             {loading ? t.loading : t.login}
           </button>
         </form>

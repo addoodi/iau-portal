@@ -122,21 +122,21 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-[#1e2c54]">{t.dashboard}</h1>
+        <h1 className="text-2xl font-bold text-primary">{t.dashboard}</h1>
         <div className="flex gap-2 items-center relative">
           {/* Report Filter Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 transition-colors text-sm"
             >
               <span className="text-gray-700">{t.reportPeriod || "Period"}:</span>
-              <span className="font-medium text-[#1e2c54]">{getFilterLabel()}</span>
+              <span className="font-medium text-primary">{getFilterLabel()}</span>
               <ChevronDown size={16} className="text-gray-500" />
             </button>
 
             {showFilterDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 z-50">
                 <div className="p-3 space-y-2">
                   <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{t.selectPeriod || "Select Period"}</p>
 
@@ -151,9 +151,9 @@ export default function Dashboard() {
                     <button
                       key={option.value}
                       onClick={() => setReportFilter(option.value)}
-                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                         reportFilter === option.value
-                          ? 'bg-[#0f5132] text-white font-medium'
+                          ? 'bg-primary text-white font-medium'
                           : 'hover:bg-gray-100 text-gray-700'
                       }`}
                     >
@@ -169,7 +169,7 @@ export default function Dashboard() {
                           type="date"
                           value={customStartDate}
                           onChange={(e) => setCustomStartDate(e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          className="w-full px-2 py-1 border border-gray-300 text-sm"
                         />
                       </div>
                       <div>
@@ -178,7 +178,7 @@ export default function Dashboard() {
                           type="date"
                           value={customEndDate}
                           onChange={(e) => setCustomEndDate(e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          className="w-full px-2 py-1 border border-gray-300 text-sm"
                         />
                       </div>
                     </div>
@@ -191,7 +191,7 @@ export default function Dashboard() {
           {/* Download Button */}
           <button
             onClick={handleDownloadReport}
-            className="p-2 text-[#0f5132] bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+            className="p-2 text-primary bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
             title={t.downloadReport || "Download Report"}
           >
             <FileDown size={18}/>
@@ -200,7 +200,7 @@ export default function Dashboard() {
       </div>
 
       {showContractWarning && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+        <div className="bg-orange-50 border border-orange-200 p-4 flex items-start gap-3">
             <AlertTriangle className="text-orange-600 shrink-0 mt-1" size={24} />
             <div>
                 <h3 className="font-bold text-orange-800 text-lg">{t.contractExpiring || "Contract Expiring Soon"}</h3>
@@ -214,7 +214,7 @@ export default function Dashboard() {
       )}
 
       {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') && pendingCount > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3 shadow-sm cursor-pointer hover:bg-yellow-100 transition-colors" onClick={() => navigate('/approvals')}>
+        <div className="bg-yellow-50 border border-yellow-200 p-4 flex items-start gap-3 cursor-pointer hover:bg-yellow-100 transition-colors" onClick={() => navigate('/approvals')}>
             <Clock className="text-yellow-600 shrink-0 mt-1" size={24} />
             <div className="flex-1">
                 <h3 className="font-bold text-yellow-800 text-lg">{t.pendingApprovals || "Pending Approvals"}</h3>
@@ -222,7 +222,7 @@ export default function Dashboard() {
                     {t.pendingApprovalsMessage?.replace('{count}', pendingCount) || `You have ${pendingCount} pending leave request${pendingCount > 1 ? 's' : ''} awaiting your approval.`}
                 </p>
             </div>
-            <button className="shrink-0 px-4 py-2 bg-yellow-600 text-white text-sm font-semibold rounded-lg hover:bg-yellow-700 transition-colors">
+            <button className="shrink-0 px-4 py-2 bg-yellow-600 text-white text-sm font-semibold hover:bg-yellow-700 transition-colors">
                 {t.reviewNow || "Review Now"}
             </button>
         </div>
@@ -230,7 +230,7 @@ export default function Dashboard() {
 
       {/* Expiring Contracts Notification */}
       {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') && expiringContracts.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+        <div className="bg-blue-50 border border-blue-200 p-4 flex items-start gap-3">
             <CalendarClock className="text-blue-600 shrink-0 mt-1" size={24} />
             <div className="flex-1">
                 <h3 className="font-bold text-blue-800 text-lg">
@@ -258,7 +258,7 @@ export default function Dashboard() {
 
       {/* Contracts Needing Verification Notification */}
       {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') && contractsNeedingVerification.length > 0 && (
-        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start gap-3 shadow-sm cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => navigate('/team')}>
+        <div className="bg-purple-50 border border-purple-200 p-4 flex items-start gap-3 cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => navigate('/team')}>
             <CheckSquare className="text-purple-600 shrink-0 mt-1" size={24} />
             <div className="flex-1">
                 <h3 className="font-bold text-purple-800 text-lg">
@@ -281,7 +281,7 @@ export default function Dashboard() {
                   )}
                 </div>
             </div>
-            <button className="shrink-0 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors">
+            <button className="shrink-0 px-4 py-2 bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors">
                 {t.verifyNow || "Verify Now"}
             </button>
         </div>
@@ -290,7 +290,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Status Widget - Colored Background */}
-        <div className={`${statusBgColor} p-6 rounded-xl shadow-sm border ${isOnLeave ? 'border-orange-200' : 'border-green-200'} flex flex-col items-center justify-center min-h-[140px]`}>
+        <div className={`${statusBgColor} p-6 border ${isOnLeave ? 'border-orange-200' : 'border-green-200'} flex flex-col items-center justify-center min-h-[140px]`}>
           <h3 className={`text-xs font-semibold uppercase tracking-wider mb-3 ${statusTextColor}`}>
             {t.status || "Status"}
           </h3>
@@ -300,24 +300,24 @@ export default function Dashboard() {
         </div>
 
         {/* Vacation Balance Widget - With Contract End */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
+        <div className="bg-white p-4 border border-gray-200 lg:col-span-2">
           <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3 tracking-wider">{t.vacationBalance}</h3>
           <div className="grid grid-cols-3 gap-3 mb-3">
-            <div className="p-3 bg-green-50 rounded-lg text-center">
-              <div className="text-2xl font-bold text-[#0f5132]">{totalEarned}</div>
+            <div className="p-3 bg-green-50 border border-green-200 text-center">
+              <div className="text-2xl font-bold text-primary">{totalEarned}</div>
               <div className="text-xs text-gray-500 font-medium">{t.totalEarned}</div>
             </div>
-            <div className="p-3 bg-red-50 rounded-lg text-center">
+            <div className="p-3 bg-red-50 border border-red-200 text-center">
               <div className="text-2xl font-bold text-red-600">{usedBalance}</div>
               <div className="text-xs text-gray-500 font-medium">{t.used}</div>
             </div>
-            <div className="p-3 bg-blue-50 rounded-lg text-center">
+            <div className="p-3 bg-blue-50 border border-blue-200 text-center">
               <div className="text-2xl font-bold text-blue-600">{availableBalance}</div>
               <div className="text-xs text-gray-500 font-medium">{t.available}</div>
             </div>
           </div>
           {user.days_remaining_in_contract !== undefined && (
-            <div className="bg-gray-50 p-2 rounded-lg flex items-center justify-between text-sm">
+            <div className="bg-gray-50 p-2 border border-gray-200 flex items-center justify-between text-sm">
               <span className="text-gray-600">{t.contractEndsIn || "Contract ends in"}</span>
               <span className="font-semibold text-gray-800">{user.days_remaining_in_contract} {t.days || "days"}</span>
             </div>

@@ -14,8 +14,8 @@ import UserManagement from './pages/UserManagement';
 import UnitManagement from './pages/UnitManagement';
 import Profile from './pages/Profile';
 import RequestModal from './components/RequestModal';
-import Sidebar from './components/Sidebar'; // Import Sidebar
-import TopBar from './components/TopBar';   // Import TopBar
+import HeaderBanner from './components/HeaderBanner'; // Import HeaderBanner
+import HorizontalNav from './components/HorizontalNav'; // Import HorizontalNav
 import SiteSettings from './pages/SiteSettings'; // Import SiteSettings
 import EmployeeDetailView from './pages/EmployeeDetailView';
 
@@ -71,52 +71,39 @@ function ProtectedRoute({ children }) {
 // --- Main Application Layout ---
 
 function MainLayout() {
-  const { t, isRTL } = usePortal();
+  const { t, isRTL, user, setUser } = usePortal();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Initialize sidebar based on screen size (md breakpoint = 768px)
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 768;
-    }
-    return true; // Default for SSR
-  });
-
-  // Handle window resize - auto-open sidebar on desktop
-  useEffect(() => {
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (!isMobile && !sidebarOpen) {
-        setSidebarOpen(true); // Ensure sidebar visible on desktop
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [sidebarOpen]);
+  const handleLogout = () => {
+    setUser(null);
+  };
 
   return (
-    <div className={`min-h-screen bg-gray-50 flex font-sans ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <TopBar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <Outlet /> {/* Child routes will render here */}
+    <div className={`min-h-screen bg-bg-page flex flex-col font-sans ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* University Header with Logo & Banner */}
+      <HeaderBanner user={user} onLogout={handleLogout} />
 
-            {/* Footer */}
-            <footer className="mt-12 pt-6 pb-4 border-t border-gray-200">
-              <div className="text-center text-sm text-gray-600">
-                {t.footerBuiltBy}
-              </div>
-            </footer>
-          </div>
-        </main>
-      </div>
+      {/* Horizontal Navigation Bar */}
+      <HorizontalNav user={user} onLogout={handleLogout} />
 
+      {/* Main Content Area */}
+      <main className="flex-1 container mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Outlet /> {/* Child routes will render here */}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="mt-auto pt-6 pb-4 border-t border-gray-200 bg-white">
+        <div className="container mx-auto px-6 text-center text-sm text-gray-600">
+          {t.footerBuiltBy}
+        </div>
+      </footer>
+
+      {/* Floating New Request Button */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className={`fixed bottom-8 ${isRTL ? 'left-8' : 'right-8'} bg-[#c5a017] hover:bg-[#b08d15] text-white p-4 rounded-full shadow-lg z-50 flex items-center gap-2`}
+        className={`fixed bottom-8 ${isRTL ? 'left-8' : 'right-8'} bg-accent hover:bg-accent-hover text-white p-4 shadow-lg z-50 flex items-center gap-2`}
       >
         <Plus size={24} />
         <span className="font-bold hidden md:inline">{t.newRequest}</span>

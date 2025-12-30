@@ -797,7 +797,50 @@ docker-compose up -d
 6. **Update this file** when making architectural changes
 7. **Refer to Gemini.md** for detailed feature history
 
-### 11.2 Common Tasks & Quick Reference
+### 11.2 Plan Mode & Plan Storage (CRITICAL)
+
+**⚠️ IMPORTANT: Plans created in Plan Mode MUST be saved to persistent project locations**
+
+**When creating implementation plans:**
+
+1. **ALWAYS save plans to the project directory**, NOT to temporary Claude file-history folders
+2. **Recommended location:** `.claude/` folder in the project root
+3. **Naming convention:** Use descriptive names with dates
+   - Good: `.claude/iau-theme-plan.md`, `.claude/database-migration-plan-2025-12.md`
+   - Bad: `plan.md`, `temp-plan.md`
+
+**Storage Rules:**
+- ✅ **DO:** Save to `.claude/[descriptive-name].md` in project root
+- ✅ **DO:** Include date in filename if multiple plans might exist
+- ✅ **DO:** Use markdown format for readability
+- ❌ **DON'T:** Rely on temporary file-history folders (they can be lost on crashes)
+- ❌ **DON'T:** Save to user home directory (hard to find later)
+- ❌ **DON'T:** Save outside the project directory
+
+**Example Workflow:**
+```markdown
+User: "Create a plan for migrating to PostgreSQL"
+
+Assistant Actions:
+1. Creates detailed implementation plan
+2. Saves to `.claude/postgresql-migration-plan-2025-12.md`
+3. Confirms save location to user
+4. References plan in CLAUDE.md if it's a major initiative
+```
+
+**Active Plans (Current):**
+- **IAU Theme Adoption:** `.claude/iau-theme-plan.md` (Phase 3 in progress)
+  - Phase 1: ✅ Foundation & Design System
+  - Phase 2: ✅ Layout & Header Components
+  - Phase 3: ⏳ Page Components (current)
+  - Phase 4-6: 🔵 Planned
+
+**Recovering Lost Plans:**
+- Check `.claude/` folder first
+- Check project root for `*plan*.md` files
+- Check `~/.claude/file-history/[session-id]/` as last resort (may be incomplete)
+
+### 11.3 Common Tasks & Quick Reference
 
 **Adding a new API endpoint:**
 1. Update `backend/models.py` (Pydantic model)
@@ -821,7 +864,7 @@ docker-compose up -d
 4. Update `Gemini-database.md`
 5. Write migration script (for SQLite later)
 
-### 11.3 When to Ask vs. When to Proceed
+### 11.4 When to Ask vs. When to Proceed
 
 **Always ask user before:**
 - ❓ Changing tech stack (React → Vue, FastAPI → Flask, etc.)

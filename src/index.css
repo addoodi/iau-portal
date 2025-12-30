@@ -1,3 +1,11 @@
+@import './styles/themes.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Apply theme colors */
+body {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+}

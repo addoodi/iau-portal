@@ -29,7 +29,25 @@
       "Bash(cat:*)",
       "Bash(python test_signature_positions.py:*)",
       "Bash(pip install:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(docker logs:*)",
+      "Bash(python:*)",
+      "Bash(pip show:*)",
+      "Bash(npm run dev:*)",
+      "Bash(uvicorn main:app:*)",
+      "Bash(timeout 5 bash -c 'until curl -s http://localhost:8000/api/setup/status > /dev/null; do sleep 1; done && echo \"\"Backend is ready\"\"')",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill /F /PID 30000)",
+      "Bash(taskkill //F //PID 30000)",
+      "Bash(taskkill //F //PID 34608)",
+      "Bash(taskkill //F //PID 39636)",
+      "Bash(taskkill //F //PID 43468)",
+      "Bash(test:*)",
+      "Bash(git log:*)",
+      "Bash(echo:*)",
+      "Bash(grep:*)",
+      "Bash(del:*)"
     ]
   }
 }

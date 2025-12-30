@@ -33,9 +33,9 @@ export default function MyRequests() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[500px]">
-      <div className="p-6 border-b border-gray-100">
-        <h2 className="text-xl font-bold text-[#1e2c54]">{t.myRequests}</h2>
+    <div className="bg-white border border-gray-200 min-h-[500px]">
+      <div className="p-6 border-b border-gray-200 bg-gray-50">
+        <h2 className="text-xl font-bold text-primary">{t.myRequests}</h2>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left">
@@ -51,7 +51,7 @@ export default function MyRequests() {
             {myRequests.map(req => (
                 <tr key={req.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <div className="text-sm font-bold text-[#1e2c54] capitalize flex items-center gap-2">
+                    <div className="text-sm font-bold text-primary capitalize flex items-center gap-2">
                         {t[req.vacation_type] || req.vacation_type}
                         {req.attachments && req.attachments.length > 0 && (
                             <a href={getAttachmentUrl(req)} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700" title={t.viewAttachment}>
@@ -84,7 +84,7 @@ export default function MyRequests() {
                     {(req.status === 'Approved' || req.status === 'Rejected') && ( // Allow download for Approved and Rejected
                       <button
                         onClick={() => generateDocx(req)}
-                        className={`flex items-center gap-2 px-3 py-1.5 text-[#0f5132] hover:bg-green-50 rounded-lg font-medium transition-colors ${
+                        className={`flex items-center gap-2 px-3 py-1.5 text-primary hover:bg-primary/10 border border-gray-200 font-medium transition-colors ${
                           isRTL ? 'flex-row-reverse' : ''
                         }`}
                       >

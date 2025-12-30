@@ -33,11 +33,11 @@ export default function UnitManagement() {
   return (
     <div className="space-y-6">
        <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-[#1e2c54]">{t.unitManagement}</h2>
+        <h2 className="text-2xl font-bold text-primary">{t.unitManagement}</h2>
         {isAdmin && (
             <button 
                 onClick={handleAdd}
-                className="bg-[#c5a017] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#b08d15] shadow-sm transition-colors"
+                className="bg-accent text-white px-4 py-2 text-sm font-bold hover:bg-accent-hover transition-colors"
             >
             + {t.addUnit || 'Add Unit'}
             </button>
@@ -51,7 +51,7 @@ export default function UnitManagement() {
                 <div key={unit.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                            <h3 className="font-bold text-[#1e2c54] text-lg">{isRTL ? unit.name_ar : unit.name_en}</h3>
+                            <h3 className="font-bold text-primary text-lg">{isRTL ? unit.name_ar : unit.name_en}</h3>
                             <span className="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
                                 {unitEmployees.length} {t.members || 'Members'}
                             </span>
@@ -78,7 +78,7 @@ export default function UnitManagement() {
                             <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {unitEmployees.map(emp => (
                                     <li key={emp.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-200 transition-all">
-                                        <div className="h-10 w-10 rounded-full bg-[#0f5132]/10 text-[#0f5132] flex items-center justify-center text-sm font-bold shrink-0">
+                                        <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">
                                             {(isRTL ? emp.name_ar : emp.name_en)?.charAt(0) || '?'}
                                         </div>
                                         <div className="min-w-0">

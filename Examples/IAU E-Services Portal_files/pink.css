@@ -1,0 +1,24 @@
+.magenta{background:#A1832D!important;}
+.c1{background:#A1832D!important;}
+.carousel-caption{border-color:#A1832D!important;}
+.news{background:#A1832D!important;}
+.navbar-inverse .navbar-nav>.active>a, .navbar-inverse .navbar-nav>.active>a:focus, .navbar-inverse .navbar-nav>.active>a:hover{background-color: #A1832D!important;}
+.navbar-inverse .navbar-nav>li>a:focus,.navbar-inverse .navbar-nav>li>a:hover{background-color:#A1832D!important;}
+ul.tabs li:hover {background-color: #A1832D!important;}
+ul.tabs li.active {background: #A1832D!important;}
+.sticky li{background: #A1832D!important;}
+.content-item .overlay {border-bottom: 10px solid #A1832D!important;}
+.content-item:hover .overlay {border-bottom: 800px solid #A1832D!important;}
+.c-week-day ,.c-event-body,.c-event{background-color: #A1832D !important;}
+.c-event-item {border:none !important;background:#082946 !important;}
+.c-event-over {background-color: #082946!important;}
+.c-nav-btn-over {background-color: #A1832D!important;}
+.pagination>.active>a, .pagination>.active>a:focus, .pagination>.active>a:hover, .pagination>.active>span, .pagination>.active>span:focus, .pagination>.active>span:hover{background:#A1832D!important; border: 1px solid #A1832D!important;}
+.navbar-toggle{background:#A1832D!important;}
+.table-bordered>tbody>tr>th{background: #A1832D!important; color:#fff!important;}
+.navbar-inverse .navbar-toggle:focus,.navbar-inverse .navbar-toggle:hover{background-color:#b85c79!important;}
+.stdnews{background: #A1832D!important;}
+
+@media screen and (max-width: 767px) {
+.d_active {background-color: #A1832D!important;}
+}

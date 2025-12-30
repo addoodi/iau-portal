@@ -85,11 +85,11 @@ export default function Approvals() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[500px]">
-        <div className="p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-[#1e2c54]">{t.approvals}</h2>
+      <div className="bg-white border border-gray-200 min-h-[500px]">
+        <div className="p-6 border-b border-gray-200 bg-gray-50">
+          <h2 className="text-xl font-bold text-primary">{t.approvals}</h2>
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-200">
         {pendingRequests.length === 0 ? (
           <div className="p-12 text-center text-gray-400">
             <CheckCircle size={48} className="mx-auto mb-4 text-gray-200" />
@@ -122,7 +122,7 @@ export default function Approvals() {
                      {(isRTL ? requester?.first_name_ar : requester?.first_name_en)?.charAt(0)}
                    </div>
                    <div className="flex-1">
-                     <div className="font-bold text-[#1e2c54]">
+                     <div className="font-bold text-primary">
                         {isRTL ? `${requester?.first_name_ar} ${requester?.last_name_ar}` : `${requester?.first_name_en} ${requester?.last_name_en}`}
                      </div>
                      <div className="text-xs text-gray-500 mb-2">
@@ -184,7 +184,7 @@ export default function Approvals() {
                        <button
                          onClick={() => handleApprove(req.id)}
                          disabled={processingRequestId === req.id}
-                         className="px-4 py-2 text-sm font-medium text-white bg-[#0f5132] rounded-md hover:bg-[#0b3d26] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                         className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                        >
                          {processingRequestId === req.id ? (t.approving || 'Approving...') : (t.approve || 'Approve')}
                        </button>
