@@ -1,9 +1,14 @@
 import { usePortal } from '../context/PortalContext';
-import { Calendar } from 'lucide-react';
+import { Calendar, LogOut } from 'lucide-react';
 import bannerImage from '../assets/images/banners/dashboard_header.jpg';
 
 const HeaderBanner = ({ user, onLogout }) => {
-  const { lang, t, toggleLanguage, isRTL, dateSystem, toggleDateSystem } = usePortal();
+  const { lang, t, toggleLanguage, isRTL, dateSystem, toggleDateSystem, logout } = usePortal();
+
+  const handleLogout = async () => {
+    await logout();
+    onLogout();
+  };
 
   return (
     <div className="bg-primary text-white">
@@ -17,7 +22,7 @@ const HeaderBanner = ({ user, onLogout }) => {
           />
         </div>
 
-        {/* Language, Date System & User Info */}
+        {/* Language, Date System, Logout & User Info */}
         <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {/* Date System Toggle */}
           <button
@@ -35,6 +40,15 @@ const HeaderBanner = ({ user, onLogout }) => {
             className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-colors"
           >
             {lang === 'ar' ? 'English' : 'العربية'}
+          </button>
+
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-white/10 hover:bg-red-600 text-white font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <LogOut size={16} />
+            {t.logout}
           </button>
 
           {/* User Info */}

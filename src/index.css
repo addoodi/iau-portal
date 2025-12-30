@@ -6,7 +6,7 @@
 
 /* Apply theme colors */
 body {
-  background: linear-gradient(to bottom, var(--color-primary) 400px, var(--color-bg-page) 400px);
+  background: linear-gradient(to bottom, var(--color-bg-page) 400px, var(--color-primary) 400px);
   color: var(--color-text-primary);
   min-height: 100vh;
 }
