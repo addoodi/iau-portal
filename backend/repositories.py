@@ -1,11 +1,41 @@
 import pandas as pd
 import numpy as np
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from uuid import UUID
 import os
 
 from .models import User, Employee, LeaveRequest, Unit, AttendanceLog, EmailSettings
+
+
+# Migration Helper - Ensures CSV schema compatibility
+def migrate_csv_schema(df: pd.DataFrame, expected_schema: Dict[str, Any], csv_name: str) -> pd.DataFrame:
+    """
+    Automatically migrates CSV files to match expected schema.
+
+    Args:
+        df: DataFrame to migrate
+        expected_schema: Dict of {column_name: default_value}
+        csv_name: Name of CSV for logging
+
+    Returns:
+        Migrated DataFrame with all expected columns
+    """
+    migrations_applied = []
+
+    for column, default_value in expected_schema.items():
+        if column not in df.columns:
+            df[column] = default_value
+            migrations_applied.append(f"  + Added '{column}' column with default: {default_value}")
+
+    if migrations_applied:
+        print(f"\n📋 Schema Migration for {csv_name}:")
+        for migration in migrations_applied:
+            print(migration)
+        print(f"✅ Migration completed successfully\n")
+
+    return df
+
 
 class BaseRepository(ABC):
     @abstractmethod
@@ -34,9 +64,24 @@ class CSVUserRepository(BaseRepository):
         self.df = self._load_df()
 
     def _load_df(self):
+        # Define expected schema with default values
+        expected_schema = {
+            'id': None,
+            'email': None,
+            'password_hash': None,
+            'role': 'employee',
+            'is_active': True
+        }
+
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            return pd.read_csv(self.file_path)
-        return pd.DataFrame(columns=['id', 'email', 'password_hash', 'role', 'is_active'])
+            df = pd.read_csv(self.file_path)
+            # Apply automatic migration
+            df = migrate_csv_schema(df, expected_schema, 'users.csv')
+            # Save migrated schema
+            df.to_csv(self.file_path, index=False)
+            return df
+
+        return pd.DataFrame(columns=list(expected_schema.keys()))
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
@@ -82,13 +127,28 @@ class CSVEmailSettingsRepository(BaseRepository):
         self.df = self._load_df()
 
     def _load_df(self):
-        # Email settings will have only one row with ID 1
+        # Define expected schema with default values
+        expected_schema = {
+            'id': 1,
+            'smtp_host': 'smtp.gmail.com',
+            'smtp_port': 587,
+            'smtp_username': None,
+            'smtp_password_hash': None,
+            'sender_email': None,
+            'is_active': False
+        }
+
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
             df = pd.read_csv(self.file_path)
+            # Apply automatic migration
+            df = migrate_csv_schema(df, expected_schema, 'email_settings.csv')
+            # Save migrated schema
+            df.to_csv(self.file_path, index=False)
             # Ensure it's not empty and has the correct ID
             if not df.empty and df['id'].iloc[0] == 1:
                 return df
-        return pd.DataFrame(columns=['id', 'smtp_host', 'smtp_port', 'smtp_username', 'smtp_password_hash', 'sender_email', 'is_active'])
+
+        return pd.DataFrame(columns=list(expected_schema.keys()))
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
@@ -138,18 +198,33 @@ class CSVEmployeeRepository(BaseRepository):
         self.df = self._load_df()
 
     def _load_df(self):
+        # Define expected schema with default values
+        expected_schema = {
+            'id': None,
+            'user_id': None,
+            'first_name_ar': None,
+            'last_name_ar': None,
+            'first_name_en': None,
+            'last_name_en': None,
+            'position_ar': None,
+            'position_en': None,
+            'unit_id': None,
+            'manager_id': None,
+            'start_date': None,
+            'monthly_vacation_earned': 2.5,
+            'signature_path': None,
+            'contract_auto_renewed': False  # New field for contract management
+        }
+
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
             df = pd.read_csv(self.file_path)
-
-            # Auto-migration: Add contract_auto_renewed column if missing
-            if 'contract_auto_renewed' not in df.columns:
-                df['contract_auto_renewed'] = False
-                # Save the updated CSV with the new column
-                df.to_csv(self.file_path, index=False)
-                print("Migration: Added 'contract_auto_renewed' column to employees.csv")
-
+            # Apply automatic migration
+            df = migrate_csv_schema(df, expected_schema, 'employees.csv')
+            # Save migrated schema
+            df.to_csv(self.file_path, index=False)
             return df
-        return pd.DataFrame(columns=['id', 'user_id', 'first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'position_ar', 'position_en', 'unit_id', 'manager_id', 'start_date', 'monthly_vacation_earned', 'signature_path', 'contract_auto_renewed'])
+
+        return pd.DataFrame(columns=list(expected_schema.keys()))
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
@@ -202,13 +277,34 @@ class CSVLeaveRequestRepository(BaseRepository):
         self.df = self._load_df()
 
     def _load_df(self):
+        # Define expected schema with default values
+        expected_schema = {
+            'id': None,
+            'employee_id': None,
+            'vacation_type': None,
+            'start_date': None,
+            'end_date': None,
+            'duration': 0,
+            'status': 'Pending',
+            'rejection_reason': None,
+            'approval_date': None,
+            'balance_used': 0,
+            'attachments': '[]'  # Empty list as string
+        }
+
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
             df = pd.read_csv(self.file_path)
+            # Apply automatic migration
+            df = migrate_csv_schema(df, expected_schema, 'leave_requests.csv')
+            # Save migrated schema
+            df.to_csv(self.file_path, index=False)
+
             # Convert 'attachments' column from string to list
             if 'attachments' in df.columns:
                 df['attachments'] = df['attachments'].apply(lambda x: eval(x) if pd.notna(x) else [])
             return df
-        return pd.DataFrame(columns=['id', 'employee_id', 'vacation_type', 'start_date', 'end_date', 'duration', 'status', 'rejection_reason', 'approval_date', 'balance_used', 'attachments'])
+
+        return pd.DataFrame(columns=list(expected_schema.keys()))
 
     def _save_df(self):
         # Convert 'attachments' list to string before saving
@@ -265,9 +361,22 @@ class CSVUnitRepository(BaseRepository):
         self.df = self._load_df()
 
     def _load_df(self):
+        # Define expected schema with default values
+        expected_schema = {
+            'id': None,
+            'name_en': None,
+            'name_ar': None
+        }
+
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            return pd.read_csv(self.file_path)
-        return pd.DataFrame(columns=['id', 'name_en', 'name_ar'])
+            df = pd.read_csv(self.file_path)
+            # Apply automatic migration
+            df = migrate_csv_schema(df, expected_schema, 'units.csv')
+            # Save migrated schema
+            df.to_csv(self.file_path, index=False)
+            return df
+
+        return pd.DataFrame(columns=list(expected_schema.keys()))
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
@@ -312,9 +421,25 @@ class CSVAttendanceRepository(BaseRepository):
         self.df = self._load_df()
 
     def _load_df(self):
+        # Define expected schema with default values
+        expected_schema = {
+            'id': None,
+            'employee_id': None,
+            'date': None,
+            'check_in': None,
+            'check_out': None,
+            'status': 'Present'
+        }
+
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            return pd.read_csv(self.file_path)
-        return pd.DataFrame(columns=['id', 'employee_id', 'date', 'check_in', 'check_out', 'status'])
+            df = pd.read_csv(self.file_path)
+            # Apply automatic migration
+            df = migrate_csv_schema(df, expected_schema, 'attendance_logs.csv')
+            # Save migrated schema
+            df.to_csv(self.file_path, index=False)
+            return df
+
+        return pd.DataFrame(columns=list(expected_schema.keys()))
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
