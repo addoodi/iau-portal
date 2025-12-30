@@ -16,13 +16,13 @@ const HeaderBanner = ({ user, onLogout }) => {
       <div className="px-6 py-4 flex items-center justify-between">
         <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
           <img
-            src="/logo.png"
+            src="/header-logo.png"
             alt="IAU Logo"
             className="h-24 w-auto"
           />
         </div>
 
-        {/* Language, Date System, Logout & User Info */}
+        {/* Language, Date System, Logout */}
         <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {/* Date System Toggle */}
           <button
@@ -50,20 +50,6 @@ const HeaderBanner = ({ user, onLogout }) => {
             <LogOut size={16} />
             {t.logout}
           </button>
-
-          {/* User Info */}
-          {user && (
-            <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
-                <div className="text-sm font-medium">
-                  {lang === 'ar' ? user.name_ar : user.name_en}
-                </div>
-                <div className="text-xs opacity-75">
-                  {lang === 'ar' ? user.position_ar : user.position_en}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

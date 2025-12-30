@@ -31,10 +31,10 @@ const HorizontalNav = ({ user, onLogout }) => {
 
   return (
     <>
-      <nav className="bg-primary">
+      <nav className="bg-accent">
         <div className="px-6">
           {/* Desktop Navigation (hidden on mobile) */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center h-full">
             {/* Navigation Links */}
             {navItems.map((item, index) => {
               const Icon = item.icon;
@@ -45,10 +45,12 @@ const HorizontalNav = ({ user, onLogout }) => {
                   <NavLink
                     to={item.path}
                     style={{
-                      backgroundColor: isActive ? '#015150' : 'transparent',
-                      color: isActive ? '#FFFFFF' : '#0F1734'
+                      backgroundColor: isActive ? '#A1832D' : 'transparent',
+                      color: isActive ? '#FFFFFF' : '#FFFFFF',
+                      paddingTop: isActive ? '1rem' : '1rem',
+                      paddingBottom: isActive ? 'calc(1rem + 10px)' : '1rem'
                     }}
-                    className={`flex items-center gap-2 px-6 py-4 transition-colors hover:bg-[#015150] hover:text-white ${
+                    className={`flex items-center gap-2 px-6 transition-colors hover:bg-accent-hover ${
                       isRTL ? 'flex-row-reverse' : ''
                     }`}
                   >
@@ -56,7 +58,7 @@ const HorizontalNav = ({ user, onLogout }) => {
                     <span className="font-medium text-sm">{item.label}</span>
                   </NavLink>
                   {index < navItems.length - 1 && (
-                    <div className="h-8 w-px bg-[#1a2d4f]" style={{ opacity: 0.3 }}></div>
+                    <div className="h-8 w-px bg-white" style={{ opacity: 0.2 }}></div>
                   )}
                 </React.Fragment>
               );
@@ -101,10 +103,10 @@ const HorizontalNav = ({ user, onLogout }) => {
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
                     style={{
-                      backgroundColor: isActive ? '#015150' : 'transparent',
-                      color: isActive ? '#FFFFFF' : '#0F1734'
+                      backgroundColor: isActive ? '#A1832D' : 'transparent',
+                      color: '#FFFFFF'
                     }}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[#015150] hover:text-white ${
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent-hover ${
                       isRTL ? 'flex-row-reverse' : ''
                     }`}
                   >
@@ -118,8 +120,8 @@ const HorizontalNav = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Separator line - magenta/teal accent */}
-      <div className="h-[10px]" style={{ backgroundColor: '#015150' }}></div>
+      {/* Separator line - brown/gold accent */}
+      <div className="h-[10px] bg-accent"></div>
     </nav>
     </>
   );
