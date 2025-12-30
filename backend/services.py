@@ -201,26 +201,20 @@ class EmployeeService:
         role_update = update_dict.pop('role', None)
         new_employee_id = update_dict.pop('employee_id', None)
 
-        logging.info(f"DEBUG: Updating employee {employee_id}, new_employee_id={new_employee_id}")
-        logging.info(f"DEBUG: Update dict keys: {list(update_dict.keys())}")
-
         # Handle employee ID change (requires updating related records)
         if new_employee_id and new_employee_id != employee_id:
-            logging.info(f"DEBUG: Employee ID is changing from {employee_id} to {new_employee_id}")
-
             # Check for duplicate
             if self.employee_repository.get_by_id(new_employee_id):
                 raise Exception(f"Employee ID '{new_employee_id}' already exists")
 
             # Update leave requests that reference this employee
-            from .repositories import LeaveRequestRepository
-            leave_repo = LeaveRequestRepository()
+            from .repositories import CSVLeaveRequestRepository
+            leave_repo = CSVLeaveRequestRepository()
             all_requests = leave_repo.get_all()
             for req in all_requests:
                 if req.employee_id == employee_id:
                     req.employee_id = new_employee_id
                     leave_repo.update(req)
-            logging.info(f"DEBUG: Updated leave requests")
 
             # Update manager references in other employees
             all_employees = self.employee_repository.get_all()
@@ -229,7 +223,6 @@ class EmployeeService:
                     emp.manager_id = new_employee_id
                     # For other employees, we update them separately with old ID
                     self.employee_repository.update(emp)
-            logging.info(f"DEBUG: Updated manager references")
 
             # Rename signature file if it exists
             old_sig_path = Path(f"backend/data/signatures/{employee_id}_signature.png")
@@ -237,26 +230,20 @@ class EmployeeService:
             if old_sig_path.exists():
                 old_sig_path.rename(new_sig_path)
                 employee.signature_path = str(new_sig_path)
-                logging.info(f"DEBUG: Renamed signature file")
 
             # Apply other field updates first (before changing ID)
             for key, value in update_dict.items():
                 setattr(employee, key, value)
-            logging.info(f"DEBUG: Applied field updates")
 
             # Update the employee record with OLD ID first
             self.employee_repository.update(employee)
-            logging.info(f"DEBUG: Updated employee record with old ID")
 
             # Now delete old record and create new one with new ID
             self.employee_repository.delete(employee_id)
-            logging.info(f"DEBUG: Deleted old employee record")
 
             employee.id = new_employee_id
             self.employee_repository.add(employee)
-            logging.info(f"DEBUG: Added new employee record with new ID")
         else:
-            logging.info(f"DEBUG: No ID change, performing normal update")
             # Normal update without ID change
             for key, value in update_dict.items():
                 setattr(employee, key, value)

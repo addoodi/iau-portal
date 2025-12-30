@@ -51,7 +51,6 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
       }
       
       if (initialUser) {
-          console.log('DEBUG: Updating employee', initialUser.id, 'with data:', formData);
           await updateEmployee(initialUser.id, formData);
       } else {
           await createEmployee(formData);
