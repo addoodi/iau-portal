@@ -31,7 +31,7 @@ const HorizontalNav = ({ user, onLogout }) => {
 
   return (
     <>
-      <nav className="bg-accent">
+      <nav className="bg-primary">
         <div className="px-6">
           {/* Desktop Navigation (hidden on mobile) */}
           <div className="hidden md:flex items-center h-full">
@@ -46,11 +46,11 @@ const HorizontalNav = ({ user, onLogout }) => {
                     to={item.path}
                     style={{
                       backgroundColor: isActive ? '#A1832D' : 'transparent',
-                      color: isActive ? '#FFFFFF' : '#FFFFFF',
+                      color: '#FFFFFF',
                       paddingTop: isActive ? '1rem' : '1rem',
                       paddingBottom: isActive ? 'calc(1rem + 10px)' : '1rem'
                     }}
-                    className={`flex items-center gap-2 px-6 transition-colors hover:bg-accent-hover ${
+                    className={`flex items-center gap-2 px-6 transition-colors hover:bg-accent ${
                       isRTL ? 'flex-row-reverse' : ''
                     }`}
                   >
@@ -106,7 +106,7 @@ const HorizontalNav = ({ user, onLogout }) => {
                       backgroundColor: isActive ? '#A1832D' : 'transparent',
                       color: '#FFFFFF'
                     }}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent-hover ${
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent ${
                       isRTL ? 'flex-row-reverse' : ''
                     }`}
                   >

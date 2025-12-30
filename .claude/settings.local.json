@@ -47,7 +47,9 @@
       "Bash(git log:*)",
       "Bash(echo:*)",
       "Bash(grep:*)",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(taskkill //F //PID 18360)",
+      "Bash(set PORT=3000)"
     ]
   }
 }
