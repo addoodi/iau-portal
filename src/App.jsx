@@ -81,7 +81,7 @@ function MainLayout() {
   return (
     <div className={`min-h-screen flex flex-col font-sans ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Container wrapper for header and content */}
-      <div className="max-w-7xl mx-auto w-full shadow-2xl">
+      <div className="max-w-7xl mx-auto w-full">
         {/* University Header with Logo & Banner */}
         <HeaderBanner user={user} onLogout={handleLogout} />
 
