@@ -8,7 +8,7 @@ const HeaderBanner = ({ user, onLogout }) => {
   return (
     <div className="bg-primary text-white">
       {/* Top Bar with Logo and University Name */}
-      <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="px-6 py-4 flex items-center justify-between">
         <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
           <img
             src="/logo.png"

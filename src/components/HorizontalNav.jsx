@@ -32,7 +32,7 @@ const HorizontalNav = ({ user, onLogout }) => {
 
   return (
     <nav className="bg-accent border-b border-gray-300">
-      <div className="container mx-auto px-6">
+      <div className="px-6">
         {/* Desktop Navigation (hidden on mobile) */}
         <div className="hidden md:flex items-center gap-1">
           {/* Navigation Links */}

@@ -79,26 +79,29 @@ function MainLayout() {
   };
 
   return (
-    <div className={`min-h-screen bg-bg-page flex flex-col font-sans ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* University Header with Logo & Banner */}
-      <HeaderBanner user={user} onLogout={handleLogout} />
+    <div className={`min-h-screen flex flex-col font-sans ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Container wrapper for header and content */}
+      <div className="max-w-7xl mx-auto w-full shadow-2xl">
+        {/* University Header with Logo & Banner */}
+        <HeaderBanner user={user} onLogout={handleLogout} />
 
-      {/* Horizontal Navigation Bar */}
-      <HorizontalNav user={user} onLogout={handleLogout} />
+        {/* Horizontal Navigation Bar */}
+        <HorizontalNav user={user} onLogout={handleLogout} />
 
-      {/* Main Content Area */}
-      <main className="flex-1 container mx-auto px-6 py-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <Outlet /> {/* Child routes will render here */}
-        </div>
-      </main>
+        {/* Main Content Area */}
+        <main className="flex-1 px-6 py-8 bg-bg-page min-h-screen">
+          <div className="space-y-6">
+            <Outlet /> {/* Child routes will render here */}
+          </div>
+        </main>
 
-      {/* Footer */}
-      <footer className="mt-auto pt-6 pb-4 border-t border-gray-200 bg-white">
-        <div className="container mx-auto px-6 text-center text-sm text-gray-600">
-          {t.footerBuiltBy}
-        </div>
-      </footer>
+        {/* Footer */}
+        <footer className="pt-6 pb-4 border-t border-gray-200 bg-white">
+          <div className="px-6 text-center text-sm text-gray-600">
+            {t.footerBuiltBy}
+          </div>
+        </footer>
+      </div>
 
       {/* Floating New Request Button */}
       <button
