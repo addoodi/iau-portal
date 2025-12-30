@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, CheckCircle, Users, Settings, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, FileText, CheckCircle, Users, Settings, LogOut, Menu, X, Building2 } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 
 const HorizontalNav = ({ user, onLogout }) => {
@@ -16,11 +16,15 @@ const HorizontalNav = ({ user, onLogout }) => {
       : []
     ),
     ...(user.role?.toLowerCase() === 'admin'
-      ? [{ path: '/employees', icon: Users, label: t.employees }]
+      ? [{ path: '/users', icon: Users, label: t.employees }]
       : []
     ),
     ...(user.role?.toLowerCase() === 'admin'
-      ? [{ path: '/settings', icon: Settings, label: t.settings }]
+      ? [{ path: '/units', icon: Building2, label: t.unitManagement }]
+      : []
+    ),
+    ...(user.role?.toLowerCase() === 'admin'
+      ? [{ path: '/site-settings', icon: Settings, label: t.settings }]
       : []
     ),
   ];
