@@ -59,13 +59,13 @@ def get_base_email_template() -> str:
         .info-table .ar-col {{
             direction: rtl;
             text-align: right;
-            border-left: 1px solid #e0e0e0;
             width: 50%;
             font-family: 'Arial', sans-serif;
         }}
         .info-table .en-col {{
             direction: ltr;
             text-align: left;
+            border-right: 1px solid #e0e0e0;
             width: 50%;
         }}
         .label {{
@@ -114,9 +114,9 @@ def render_leave_request_created_email(data: Dict[str, Any]) -> str:
             - employee_name_ar: str
             - employee_name_en: str
             - employee_id: str
-            - vacation_type: str (e.g., 'Annual', 'Sick')
-            - start_date: str
-            - end_date: str
+            - vacation_type: str (e.g., 'annual', 'sick')
+            - start_date: str (Gregorian YYYY-MM-DD)
+            - end_date: str (Gregorian YYYY-MM-DD)
             - duration: int
             - manager_name_ar: str
             - manager_name_en: str
@@ -124,14 +124,39 @@ def render_leave_request_created_email(data: Dict[str, Any]) -> str:
     Returns:
         str: Complete HTML email
     """
+    from datetime import datetime
+
     vacation_types = {
-        'Annual': {'ar': 'إجازة سنوية', 'en': 'Annual Vacation'},
-        'Sick': {'ar': 'إجازة مرضية', 'en': 'Sick Leave'},
-        'Unpaid': {'ar': 'إجازة بدون أجر', 'en': 'Unpaid Leave'},
-        'Emergency': {'ar': 'إجازة طارئة', 'en': 'Emergency Leave'}
+        'annual': {'ar': 'إجازة اعتيادية', 'en': 'Annual Vacation'},
+        'sick': {'ar': 'مرضية', 'en': 'Sick Leave'},
+        'unpaid': {'ar': 'إجازة بدون أجر', 'en': 'Unpaid Leave'},
+        'emergency': {'ar': 'طارئة', 'en': 'Emergency Leave'},
+        'exams': {'ar': 'إجازة الامتحانات', 'en': 'Exams Leave'}
     }
 
-    vac_type = vacation_types.get(data['vacation_type'], {'ar': data['vacation_type'], 'en': data['vacation_type']})
+    vac_type = vacation_types.get(data['vacation_type'].lower(), {'ar': data['vacation_type'], 'en': data['vacation_type']})
+
+    # Convert dates to Hijri for Arabic column
+    start_date_gregorian = data['start_date']
+    end_date_gregorian = data['end_date']
+
+    try:
+        from hijri_converter import Gregorian
+        start_dt = datetime.strptime(start_date_gregorian, '%Y-%m-%d')
+        end_dt = datetime.strptime(end_date_gregorian, '%Y-%m-%d')
+
+        # Convert to Hijri
+        start_hijri = Gregorian(start_dt.year, start_dt.month, start_dt.day).to_hijri()
+        end_hijri = Gregorian(end_dt.year, end_dt.month, end_dt.day).to_hijri()
+
+        # Format Hijri dates in Arabic format (YYYY/MM/DD)
+        start_date_ar = f"{start_hijri.year}/{start_hijri.month:02d}/{start_hijri.day:02d}"
+        end_date_ar = f"{end_hijri.year}/{end_hijri.month:02d}/{end_hijri.day:02d}"
+
+    except Exception as e:
+        # Fallback to Gregorian if conversion fails
+        start_date_ar = start_date_gregorian
+        end_date_ar = end_date_gregorian
 
     content = f"""
     <div class="container">
@@ -141,63 +166,63 @@ def render_leave_request_created_email(data: Dict[str, Any]) -> str:
         <div class="content">
             <table class="info-table">
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">عزيزي/عزيزتي {data['manager_name_ar']}</div>
-                        <p class="value">تم تقديم طلب إجازة جديد ويحتاج إلى موافقتك.</p>
-                    </td>
                     <td class="en-col">
                         <div class="label">Dear {data['manager_name_en']}</div>
                         <p class="value">A new leave request has been submitted and requires your approval.</p>
                     </td>
+                    <td class="ar-col">
+                        <div class="label">عزيزي/عزيزتي {data['manager_name_ar']}</div>
+                        <p class="value">تم تقديم طلب إجازة جديد ويحتاج إلى موافقتك.</p>
+                    </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">اسم الموظف:</div>
-                        <div class="value">{data['employee_name_ar']} ({data['employee_id']})</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">Employee Name:</div>
                         <div class="value">{data['employee_name_en']} ({data['employee_id']})</div>
                     </td>
+                    <td class="ar-col">
+                        <div class="label">اسم الموظف:</div>
+                        <div class="value">{data['employee_name_ar']} ({data['employee_id']})</div>
+                    </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">نوع الإجازة:</div>
-                        <div class="value">{vac_type['ar']}</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">Vacation Type:</div>
                         <div class="value">{vac_type['en']}</div>
                     </td>
+                    <td class="ar-col">
+                        <div class="label">نوع الإجازة:</div>
+                        <div class="value">{vac_type['ar']}</div>
+                    </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">تاريخ البدء:</div>
-                        <div class="value">{data['start_date']}</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">Start Date:</div>
-                        <div class="value">{data['start_date']}</div>
+                        <div class="value">{start_date_gregorian}</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">تاريخ البدء:</div>
+                        <div class="value">{start_date_ar}</div>
                     </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">تاريخ الانتهاء:</div>
-                        <div class="value">{data['end_date']}</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">End Date:</div>
-                        <div class="value">{data['end_date']}</div>
+                        <div class="value">{end_date_gregorian}</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">تاريخ الانتهاء:</div>
+                        <div class="value">{end_date_ar}</div>
                     </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">المدة:</div>
-                        <div class="value">{data['duration']} يوم/أيام</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">Duration:</div>
                         <div class="value">{data['duration']} day(s)</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">المدة:</div>
+                        <div class="value">{data['duration']} يوم/أيام</div>
                     </td>
                 </tr>
             </table>
@@ -221,8 +246,8 @@ def render_leave_request_approved_email(data: Dict[str, Any]) -> str:
             - employee_name_ar: str
             - employee_name_en: str
             - vacation_type: str
-            - start_date: str
-            - end_date: str
+            - start_date: str (Gregorian YYYY-MM-DD)
+            - end_date: str (Gregorian YYYY-MM-DD)
             - duration: int
             - balance_deducted: int
             - remaining_balance: float
@@ -230,14 +255,39 @@ def render_leave_request_approved_email(data: Dict[str, Any]) -> str:
     Returns:
         str: Complete HTML email
     """
+    from datetime import datetime
+
     vacation_types = {
-        'Annual': {'ar': 'إجازة سنوية', 'en': 'Annual Vacation'},
-        'Sick': {'ar': 'إجازة مرضية', 'en': 'Sick Leave'},
-        'Unpaid': {'ar': 'إجازة بدون أجر', 'en': 'Unpaid Leave'},
-        'Emergency': {'ar': 'إجازة طارئة', 'en': 'Emergency Leave'}
+        'annual': {'ar': 'إجازة اعتيادية', 'en': 'Annual Vacation'},
+        'sick': {'ar': 'مرضية', 'en': 'Sick Leave'},
+        'unpaid': {'ar': 'إجازة بدون أجر', 'en': 'Unpaid Leave'},
+        'emergency': {'ar': 'طارئة', 'en': 'Emergency Leave'},
+        'exams': {'ar': 'إجازة الامتحانات', 'en': 'Exams Leave'}
     }
 
-    vac_type = vacation_types.get(data['vacation_type'], {'ar': data['vacation_type'], 'en': data['vacation_type']})
+    vac_type = vacation_types.get(data['vacation_type'].lower(), {'ar': data['vacation_type'], 'en': data['vacation_type']})
+
+    # Convert dates to Hijri for Arabic column
+    start_date_gregorian = data['start_date']
+    end_date_gregorian = data['end_date']
+
+    try:
+        from hijri_converter import Gregorian
+        start_dt = datetime.strptime(start_date_gregorian, '%Y-%m-%d')
+        end_dt = datetime.strptime(end_date_gregorian, '%Y-%m-%d')
+
+        # Convert to Hijri
+        start_hijri = Gregorian(start_dt.year, start_dt.month, start_dt.day).to_hijri()
+        end_hijri = Gregorian(end_dt.year, end_dt.month, end_dt.day).to_hijri()
+
+        # Format Hijri dates in Arabic format (YYYY/MM/DD)
+        start_date_ar = f"{start_hijri.year}/{start_hijri.month:02d}/{start_hijri.day:02d}"
+        end_date_ar = f"{end_hijri.year}/{end_hijri.month:02d}/{end_hijri.day:02d}"
+
+    except Exception as e:
+        # Fallback to Gregorian if conversion fails
+        start_date_ar = start_date_gregorian
+        end_date_ar = end_date_gregorian
 
     content = f"""
     <div class="container">
@@ -247,63 +297,63 @@ def render_leave_request_approved_email(data: Dict[str, Any]) -> str:
         <div class="content">
             <table class="info-table">
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">عزيزي/عزيزتي {data['employee_name_ar']}</div>
-                        <p class="value">تمت الموافقة على طلب إجازتك!</p>
-                    </td>
                     <td class="en-col">
                         <div class="label">Dear {data['employee_name_en']}</div>
                         <p class="value">Your leave request has been approved!</p>
                     </td>
+                    <td class="ar-col">
+                        <div class="label">عزيزي/عزيزتي {data['employee_name_ar']}</div>
+                        <p class="value">تمت الموافقة على طلب إجازتك!</p>
+                    </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">نوع الإجازة:</div>
-                        <div class="value">{vac_type['ar']}</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">Vacation Type:</div>
                         <div class="value">{vac_type['en']}</div>
                     </td>
+                    <td class="ar-col">
+                        <div class="label">نوع الإجازة:</div>
+                        <div class="value">{vac_type['ar']}</div>
+                    </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">من:</div>
-                        <div class="value">{data['start_date']}</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">From:</div>
-                        <div class="value">{data['start_date']}</div>
+                        <div class="value">{start_date_gregorian}</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">من:</div>
+                        <div class="value">{start_date_ar}</div>
                     </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">إلى:</div>
-                        <div class="value">{data['end_date']}</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">To:</div>
-                        <div class="value">{data['end_date']}</div>
+                        <div class="value">{end_date_gregorian}</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">إلى:</div>
+                        <div class="value">{end_date_ar}</div>
                     </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">عدد الأيام المستخدمة:</div>
-                        <div class="value">{data['balance_deducted']} يوم/أيام</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">Days Used:</div>
                         <div class="value">{data['balance_deducted']} day(s)</div>
                     </td>
+                    <td class="ar-col">
+                        <div class="label">عدد الأيام المستخدمة:</div>
+                        <div class="value">{data['balance_deducted']} يوم/أيام</div>
+                    </td>
                 </tr>
                 <tr>
-                    <td class="ar-col">
-                        <div class="label">الرصيد المتبقي:</div>
-                        <div class="value">{data['remaining_balance']:.1f} يوم/أيام</div>
-                    </td>
                     <td class="en-col">
                         <div class="label">Remaining Balance:</div>
                         <div class="value">{data['remaining_balance']:.1f} day(s)</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">الرصيد المتبقي:</div>
+                        <div class="value">{data['remaining_balance']:.1f} يوم/أيام</div>
                     </td>
                 </tr>
             </table>

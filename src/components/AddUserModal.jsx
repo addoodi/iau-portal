@@ -9,6 +9,7 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
     email: initialUser?.email || '',
     password: '',
     role: initialUser?.role || 'user',
+    employee_id: initialUser?.id || '',
     first_name_en: initialUser?.first_name_en || '',
     last_name_en: initialUser?.last_name_en || '',
     first_name_ar: initialUser?.first_name_ar || '',
@@ -39,8 +40,8 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
       for (const key in formData) {
         if (key === 'password' && initialUser && formData[key] === '') continue; // Skip password check for edit
 
-        // For admin role, skip validation for unit_id, manager_id, and start_date
-        if (formData.role === 'admin' && (key === 'unit_id' || key === 'manager_id' || key === 'start_date')) {
+        // For admin role, skip validation for unit_id, manager_id, start_date, and employee_id
+        if (formData.role === 'admin' && (key === 'unit_id' || key === 'manager_id' || key === 'start_date' || key === 'employee_id')) {
           continue;
         }
 
@@ -50,6 +51,7 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
       }
       
       if (initialUser) {
+          console.log('DEBUG: Updating employee', initialUser.id, 'with data:', formData);
           await updateEmployee(initialUser.id, formData);
       } else {
           await createEmployee(formData);
@@ -100,6 +102,25 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
             {/* Employee Info */}
             <div className="space-y-4 p-4 border rounded">
                 <h4 className="font-bold text-md text-gray-700 border-b pb-2">{t.employeeDetails}</h4>
+                <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                        {t.employeeId || 'Employee ID'} {formData.role === 'admin' && <span className="text-xs text-gray-400">(Optional)</span>}
+                    </label>
+                    <input
+                        type="text"
+                        name="employee_id"
+                        required={formData.role !== 'admin'}
+                        className="w-full border rounded p-2 text-sm"
+                        value={formData.employee_id}
+                        onChange={handleChange}
+                        placeholder={initialUser ? "" : "e.g., IAU-006"}
+                    />
+                    {initialUser && (
+                        <p className="text-xs text-orange-600 mt-1">
+                            ⚠️ {t.employeeIdWarning || 'Warning: Changing this will affect leave requests, manager references, and signature files'}
+                        </p>
+                    )}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                     <div>
                         <label className="block text-sm font-medium text-gray-600 mb-1">{t.firstNameEn}</label>

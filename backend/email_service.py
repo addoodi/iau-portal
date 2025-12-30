@@ -4,9 +4,10 @@ from email.mime.multipart import MIMEMultipart
 import os
 import logging
 
-# Configure logging
-logging.basicConfig(filename='backend/email.log', level=logging.INFO, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logging with UTF-8 encoding to support Arabic characters
+logging.basicConfig(filename='backend/email.log', level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    encoding='utf-8')
 
 class EmailService:
     def __init__(self):
@@ -16,6 +17,7 @@ class EmailService:
         # Load configuration from environment variables
         self.smtp_server = os.getenv("SMTP_HOST", "smtp.gmail.com")
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        self.smtp_username = os.getenv("SMTP_USERNAME", "")
         self.sender_email = os.getenv("SMTP_SENDER_EMAIL", "noreply@iau-portal.com")
         self.sender_password = os.getenv("SMTP_PASSWORD", "")
 
@@ -59,7 +61,7 @@ class EmailService:
 
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
             server.starttls()
-            server.login(self.sender_email, self.sender_password)
+            server.login(self.smtp_username, self.sender_password)
             server.sendmail(self.sender_email, to_email, msg.as_string())
             server.quit()
 

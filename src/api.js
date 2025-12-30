@@ -1,7 +1,7 @@
 // API URL configuration
 // - In production (Docker): Uses relative path /api (nginx proxies to backend)
 // - In development: Uses http://localhost:8000/api (direct backend connection)
-const isDevelopment = window.location.port === '3000' || window.location.port === '5173';
+const isDevelopment = window.location.port === '3000' || window.location.port === '5173' || window.location.port === '3004' || window.location.port === '3005';
 export const API_BASE_URL = isDevelopment
   ? 'http://localhost:8000/api'
   : '/api';

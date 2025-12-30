@@ -96,6 +96,7 @@ class EmployeeCreate(BaseModel):
     email: EmailStr
     password: str
     role: str
+    employee_id: Optional[str] = None  # Custom employee ID (e.g., IAU-006)
     first_name_ar: str
     last_name_ar: str
     first_name_en: str
@@ -108,6 +109,7 @@ class EmployeeCreate(BaseModel):
     manager_id: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):
+    employee_id: Optional[str] = None  # Allow changing employee ID (admin only)
     first_name_ar: Optional[str] = None
     last_name_ar: Optional[str] = None
     first_name_en: Optional[str] = None

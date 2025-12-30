@@ -169,7 +169,9 @@ export const TRANSLATIONS = {
     upload: "Upload",
     exams: "Exams Leave",
     downloadForm: "Download Form",
-    requiredFieldsForRole: "Unit, Manager, and Start Date are required for non-admin roles"
+    requiredFieldsForRole: "Unit, Manager, and Start Date are required for non-admin roles",
+    employeeId: "Employee ID",
+    employeeIdWarning: "Warning: Changing this will affect leave requests, manager references, and signature files"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -340,6 +342,8 @@ export const TRANSLATIONS = {
     upload: "رفع",
     exams: "إجازة الامتحانات",
     downloadForm: "تحميل النموذج",
-    requiredFieldsForRole: "الوحدة والمدير وتاريخ البداية مطلوبة للأدوار غير الإدارية"
+    requiredFieldsForRole: "الوحدة والمدير وتاريخ البداية مطلوبة للأدوار غير الإدارية",
+    employeeId: "الرقم الوظيفي",
+    employeeIdWarning: "تحذير: تغيير هذا سيؤثر على طلبات الإجازة ومراجع المدير وملفات التوقيع"
   }
 };

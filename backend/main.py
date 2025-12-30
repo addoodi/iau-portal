@@ -725,3 +725,4 @@ def get_template_status(current_user: User = Depends(get_current_user)):
             "size_kb": round(stat.st_size / 1024, 2)
         }
     return {"exists": False}
+

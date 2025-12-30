@@ -188,6 +188,10 @@ class EmployeeService:
         return self._get_employee_with_balance(employee)
 
     def update_employee(self, employee_id: str, update_data: EmployeeUpdate) -> EmployeeWithBalance:
+        import os
+        from pathlib import Path
+        import logging
+        # Force reload
         employee = self.employee_repository.get_by_id(employee_id)
         if not employee:
             raise Exception("Employee not found")
@@ -195,11 +199,68 @@ class EmployeeService:
         # Update fields
         update_dict = update_data.dict(exclude_unset=True)
         role_update = update_dict.pop('role', None)
+        new_employee_id = update_dict.pop('employee_id', None)
 
-        for key, value in update_dict.items():
-            setattr(employee, key, value)
-        
-        self.employee_repository.update(employee)
+        logging.info(f"DEBUG: Updating employee {employee_id}, new_employee_id={new_employee_id}")
+        logging.info(f"DEBUG: Update dict keys: {list(update_dict.keys())}")
+
+        # Handle employee ID change (requires updating related records)
+        if new_employee_id and new_employee_id != employee_id:
+            logging.info(f"DEBUG: Employee ID is changing from {employee_id} to {new_employee_id}")
+
+            # Check for duplicate
+            if self.employee_repository.get_by_id(new_employee_id):
+                raise Exception(f"Employee ID '{new_employee_id}' already exists")
+
+            # Update leave requests that reference this employee
+            from .repositories import LeaveRequestRepository
+            leave_repo = LeaveRequestRepository()
+            all_requests = leave_repo.get_all()
+            for req in all_requests:
+                if req.employee_id == employee_id:
+                    req.employee_id = new_employee_id
+                    leave_repo.update(req)
+            logging.info(f"DEBUG: Updated leave requests")
+
+            # Update manager references in other employees
+            all_employees = self.employee_repository.get_all()
+            for emp in all_employees:
+                if emp.manager_id == employee_id:
+                    emp.manager_id = new_employee_id
+                    # For other employees, we update them separately with old ID
+                    self.employee_repository.update(emp)
+            logging.info(f"DEBUG: Updated manager references")
+
+            # Rename signature file if it exists
+            old_sig_path = Path(f"backend/data/signatures/{employee_id}_signature.png")
+            new_sig_path = Path(f"backend/data/signatures/{new_employee_id}_signature.png")
+            if old_sig_path.exists():
+                old_sig_path.rename(new_sig_path)
+                employee.signature_path = str(new_sig_path)
+                logging.info(f"DEBUG: Renamed signature file")
+
+            # Apply other field updates first (before changing ID)
+            for key, value in update_dict.items():
+                setattr(employee, key, value)
+            logging.info(f"DEBUG: Applied field updates")
+
+            # Update the employee record with OLD ID first
+            self.employee_repository.update(employee)
+            logging.info(f"DEBUG: Updated employee record with old ID")
+
+            # Now delete old record and create new one with new ID
+            self.employee_repository.delete(employee_id)
+            logging.info(f"DEBUG: Deleted old employee record")
+
+            employee.id = new_employee_id
+            self.employee_repository.add(employee)
+            logging.info(f"DEBUG: Added new employee record with new ID")
+        else:
+            logging.info(f"DEBUG: No ID change, performing normal update")
+            # Normal update without ID change
+            for key, value in update_dict.items():
+                setattr(employee, key, value)
+            self.employee_repository.update(employee)
 
         # Update User role if provided
         if role_update:
@@ -250,23 +311,31 @@ class EmployeeService:
         created_user = self.user_repository.add(new_user)
 
         all_employees = self.employee_repository.get_all()
-        
-        # Robust ID generation
-        max_id_num = 0
-        for emp in all_employees:
-            try:
-                num_part = int(emp.id.split('-')[1])
-                if num_part > max_id_num:
-                    max_id_num = num_part
-            except (IndexError, ValueError):
-                continue
-        
-        next_id_num = max_id_num + 1
-        
+
+        # Use provided employee_id or generate new one
+        if employee_create.employee_id:
+            # Check for duplicate employee IDs
+            if any(emp.id == employee_create.employee_id for emp in all_employees):
+                raise Exception(f"Employee ID '{employee_create.employee_id}' already exists")
+            employee_id = employee_create.employee_id
+        else:
+            # Robust ID generation
+            max_id_num = 0
+            for emp in all_employees:
+                try:
+                    num_part = int(emp.id.split('-')[1])
+                    if num_part > max_id_num:
+                        max_id_num = num_part
+                except (IndexError, ValueError):
+                    continue
+
+            next_id_num = max_id_num + 1
+            employee_id = f"IAU-{next_id_num:03d}"
+
         new_employee = Employee(
-            id=f"IAU-{next_id_num:03d}",
+            id=employee_id,
             user_id=created_user.id,
-            **employee_create.dict(exclude={'email', 'password', 'role'})
+            **employee_create.dict(exclude={'email', 'password', 'role', 'employee_id'})
         )
         created_employee = self.employee_repository.add(new_employee)
         
@@ -562,4 +631,4 @@ class EmailSettingsService:
 
         except Exception as e:
             print(f"Error sending email: {e}")
-            raise Exception(f"Error sending email: {e}")
+            raise Exception(f"Error sending email: {e}") 
