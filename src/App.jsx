@@ -103,6 +103,13 @@ function MainLayout() {
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             <Outlet /> {/* Child routes will render here */}
+
+            {/* Footer */}
+            <footer className="mt-12 pt-6 pb-4 border-t border-gray-200">
+              <div className="text-center text-sm text-gray-600">
+                {t.footerBuiltBy}
+              </div>
+            </footer>
           </div>
         </main>
       </div>

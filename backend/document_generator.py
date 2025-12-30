@@ -274,6 +274,13 @@ REPORT_TRANSLATIONS = {
     }
 }
 
+def convert_to_arabic_numerals(number):
+    """Convert Western numerals to Arabic-Indic numerals"""
+    arabic_numerals = '٠١٢٣٤٥٦٧٨٩'
+    western_numerals = '0123456789'
+    trans_table = str.maketrans(western_numerals, arabic_numerals)
+    return str(number).translate(trans_table)
+
 def format_date_for_report(date_str, date_system='gregorian', language='en'):
     """
     Format a date string according to the specified calendar system and language.
@@ -306,7 +313,10 @@ def format_date_for_report(date_str, date_system='gregorian', language='en'):
             month_name = hijri_months_ar[hijri_date.month - 1] if language == 'ar' else hijri_months_en[hijri_date.month - 1]
 
             if language == 'ar':
-                return f"{hijri_date.day} {month_name} {hijri_date.year} هـ"
+                # Use Arabic-Indic numerals to avoid bidirectional text issues
+                day_ar = convert_to_arabic_numerals(hijri_date.day)
+                year_ar = convert_to_arabic_numerals(hijri_date.year)
+                return f"{day_ar} {month_name} {year_ar} هـ"
             else:
                 return f"{month_name} {hijri_date.day}, {hijri_date.year} AH"
         else:
@@ -329,7 +339,10 @@ def format_date_for_report(date_str, date_system='gregorian', language='en'):
             month_name = month_names_ar[date_obj.month - 1] if language == 'ar' else month_names_en[date_obj.month - 1]
 
             if language == 'ar':
-                return f"{date_obj.day} {month_name} {date_obj.year} م"
+                # Use Arabic-Indic numerals to avoid bidirectional text issues
+                day_ar = convert_to_arabic_numerals(date_obj.day)
+                year_ar = convert_to_arabic_numerals(date_obj.year)
+                return f"{day_ar} {month_name} {year_ar} م"
             else:
                 return f"{month_name} {date_obj.day}, {date_obj.year}"
     except Exception as e:

@@ -124,7 +124,10 @@ def update_employee(employee_id: str, employee_update: EmployeeUpdate,
     # Admin can update any employee, any field
     if current_user.role == "admin":
         try:
-            return employee_service.update_employee(employee_id, employee_update)
+            updated_employee = employee_service.update_employee(employee_id, employee_update)
+            # Clear contract verification flag when admin edits employee
+            employee_service.clear_contract_verification_flag(employee_id)
+            return updated_employee
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
@@ -148,7 +151,10 @@ def update_employee(employee_id: str, employee_update: EmployeeUpdate,
             )
 
         try:
-            return employee_service.update_employee(employee_id, employee_update)
+            updated_employee = employee_service.update_employee(employee_id, employee_update)
+            # Clear contract verification flag when manager edits employee
+            employee_service.clear_contract_verification_flag(employee_id)
+            return updated_employee
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
@@ -679,6 +685,128 @@ def download_attachment(
         raise HTTPException(status_code=404, detail="Attachment not found")
 
     return FileResponse(target_path)
+
+
+# --- Contract Management Endpoints ---
+@app.post("/api/contracts/check-renewals")
+def check_and_renew_contracts(
+    employee_service: EmployeeService = Depends(get_employee_service),
+    email_settings_service: EmailSettingsService = Depends(get_email_settings_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Check for expired contracts and auto-renew them (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        # Check and renew expired contracts
+        renewed_employees = employee_service.check_and_renew_expired_contracts()
+
+        # Send email notifications for auto-renewed contracts
+        email_settings = email_settings_service.get_email_settings()
+        if email_settings and email_settings.is_active:
+            from backend.hierarchy import get_all_subordinates
+            all_employees = employee_service.get_employees()
+
+            for emp in renewed_employees:
+                # Find manager
+                if emp.manager_id:
+                    manager_emp = next((e for e in all_employees if e.id == emp.manager_id), None)
+                    if manager_emp and manager_emp.email:
+                        # Send email to manager about auto-renewed contract
+                        email_settings_service.send_contract_auto_renewed_notification(
+                            manager_email=manager_emp.email,
+                            employee_name_ar=f"{emp.first_name_ar} {emp.last_name_ar}",
+                            employee_name_en=f"{emp.first_name_en} {emp.last_name_en}",
+                            employee_id=emp.id,
+                            new_contract_end_date=emp.contract_end_date
+                        )
+
+        return {
+            "message": f"Checked and renewed {len(renewed_employees)} contracts",
+            "renewed_count": len(renewed_employees),
+            "renewed_employees": [{"id": e.id, "name_en": f"{e.first_name_en} {e.last_name_en}"} for e in renewed_employees]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/contracts/expiring")
+def get_expiring_contracts(
+    days_threshold: int = 105,
+    employee_service: EmployeeService = Depends(get_employee_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Get contracts expiring within threshold days for current user's team"""
+    if current_user.role not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        from backend.hierarchy import get_all_subordinates
+
+        # Get all employees with expiring contracts
+        expiring_employees = employee_service.get_employees_with_expiring_contracts(days_threshold)
+
+        # Filter by manager's team if not admin
+        if current_user.role == "manager":
+            current_employee = employee_service.get_employee_by_user_id(current_user.id)
+            all_employees = employee_service.get_employees()
+            subordinate_ids = get_all_subordinates(current_employee.id, all_employees, include_indirect=True)
+            expiring_employees = [emp for emp in expiring_employees if emp.id in subordinate_ids]
+
+        return {
+            "expiring_contracts": [
+                {
+                    "employee_id": emp.id,
+                    "name_ar": f"{emp.first_name_ar} {emp.last_name_ar}",
+                    "name_en": f"{emp.first_name_en} {emp.last_name_en}",
+                    "contract_end_date": emp.contract_end_date,
+                    "days_remaining": emp.days_remaining_in_contract
+                }
+                for emp in expiring_employees
+            ],
+            "count": len(expiring_employees)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/contracts/needing-verification")
+def get_contracts_needing_verification(
+    employee_service: EmployeeService = Depends(get_employee_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Get auto-renewed contracts needing verification for current user's team"""
+    if current_user.role not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        from backend.hierarchy import get_all_subordinates
+
+        # Get all employees needing verification
+        needing_verification = employee_service.get_employees_needing_contract_verification()
+
+        # Filter by manager's team if not admin
+        if current_user.role == "manager":
+            current_employee = employee_service.get_employee_by_user_id(current_user.id)
+            all_employees = employee_service.get_employees()
+            subordinate_ids = get_all_subordinates(current_employee.id, all_employees, include_indirect=True)
+            needing_verification = [emp for emp in needing_verification if emp.id in subordinate_ids]
+
+        return {
+            "needing_verification": [
+                {
+                    "employee_id": emp.id,
+                    "name_ar": f"{emp.first_name_ar} {emp.last_name_ar}",
+                    "name_en": f"{emp.first_name_en} {emp.last_name_en}",
+                    "contract_end_date": emp.contract_end_date
+                }
+                for emp in needing_verification
+            ],
+            "count": len(needing_verification)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Template Upload Endpoints

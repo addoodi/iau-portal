@@ -558,3 +558,222 @@ def render_contract_critical_warning_email(data: Dict[str, Any]) -> str:
     """
 
     return get_base_email_template().format(content=content)
+
+
+def render_contract_expiring_manager_notification(data: Dict[str, Any]) -> str:
+    """
+    Email to manager when employee's contract is expiring within 105 days
+
+    Args:
+        data: Dict containing:
+            - manager_name_ar: str
+            - manager_name_en: str
+            - employee_name_ar: str
+            - employee_name_en: str
+            - employee_id: str
+            - contract_end_date: str (YYYY-MM-DD)
+            - days_remaining: int
+
+    Returns:
+        str: Complete HTML email
+    """
+    from datetime import datetime
+
+    # Convert date to Hijri for Arabic column
+    contract_end_gregorian = data['contract_end_date']
+
+    try:
+        from hijri_converter import Gregorian
+        end_dt = datetime.strptime(contract_end_gregorian, '%Y-%m-%d')
+
+        # Convert to Hijri
+        end_hijri = Gregorian(end_dt.year, end_dt.month, end_dt.day).to_hijri()
+
+        # Format Hijri dates in Arabic format (YYYY/MM/DD)
+        contract_end_ar = f"{end_hijri.year}/{end_hijri.month:02d}/{end_hijri.day:02d}"
+
+    except Exception as e:
+        # Fallback to Gregorian if conversion fails
+        contract_end_ar = contract_end_gregorian
+
+    content = f"""
+    <div class="container">
+        <div class="header">
+            <h1>Contract Renewal Required / مطلوب تجديد العقد</h1>
+        </div>
+        <div class="content">
+            <div class="warning">
+                <table class="info-table" style="margin: 0;">
+                    <tr>
+                        <td class="en-col" style="border: none;">
+                            <strong>Action Required: Contract Renewal Process</strong>
+                        </td>
+                        <td class="ar-col" style="border: none;">
+                            <strong>مطلوب إجراء: عملية تجديد العقد</strong>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <table class="info-table">
+                <tr>
+                    <td class="en-col">
+                        <div class="label">Dear {data['manager_name_en']}</div>
+                        <p class="value">This is a notification that one of your team members' contract is expiring soon and requires renewal action.</p>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">عزيزي/عزيزتي {data['manager_name_ar']}</div>
+                        <p class="value">هذا إشعار بأن عقد أحد أعضاء فريقك سينتهي قريباً ويتطلب إجراء التجديد.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="en-col">
+                        <div class="label">Employee Name:</div>
+                        <div class="value">{data['employee_name_en']} ({data['employee_id']})</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">اسم الموظف:</div>
+                        <div class="value">{data['employee_name_ar']} ({data['employee_id']})</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="en-col">
+                        <div class="label">Contract End Date:</div>
+                        <div class="value">{contract_end_gregorian}</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">تاريخ انتهاء العقد:</div>
+                        <div class="value">{contract_end_ar}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="en-col">
+                        <div class="label">Days Remaining:</div>
+                        <div class="value">{data['days_remaining']} day(s)</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">الأيام المتبقية:</div>
+                        <div class="value">{data['days_remaining']} يوم/أيام</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="en-col">
+                        <p class="value">Please initiate the contract renewal process as soon as possible.</p>
+                    </td>
+                    <td class="ar-col">
+                        <p class="value">يرجى البدء بعملية تجديد العقد في أقرب وقت ممكن.</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="footer">
+            <p>IAU Portal - Contract Management System</p>
+            <p>نظام إدارة العقود - بوابة جامعة الإمام عبدالرحمن بن فيصل</p>
+        </div>
+    </div>
+    """
+
+    return get_base_email_template().format(content=content)
+
+
+def render_contract_auto_renewed_notification(data: Dict[str, Any]) -> str:
+    """
+    Email to manager when employee's contract has been auto-renewed
+
+    Args:
+        data: Dict containing:
+            - manager_name_ar: str
+            - manager_name_en: str
+            - employee_name_ar: str
+            - employee_name_en: str
+            - employee_id: str
+            - new_contract_end_date: str (YYYY-MM-DD)
+
+    Returns:
+        str: Complete HTML email
+    """
+    from datetime import datetime
+
+    # Convert date to Hijri for Arabic column
+    new_end_gregorian = data['new_contract_end_date']
+
+    try:
+        from hijri_converter import Gregorian
+        end_dt = datetime.strptime(new_end_gregorian, '%Y-%m-%d')
+
+        # Convert to Hijri
+        end_hijri = Gregorian(end_dt.year, end_dt.month, end_dt.day).to_hijri()
+
+        # Format Hijri dates in Arabic format (YYYY/MM/DD)
+        new_end_ar = f"{end_hijri.year}/{end_hijri.month:02d}/{end_hijri.day:02d}"
+
+    except Exception as e:
+        # Fallback to Gregorian if conversion fails
+        new_end_ar = new_end_gregorian
+
+    content = f"""
+    <div class="container">
+        <div class="header">
+            <h1>Contract Auto-Renewed / تم تجديد العقد تلقائياً</h1>
+        </div>
+        <div class="content">
+            <div class="warning">
+                <table class="info-table" style="margin: 0;">
+                    <tr>
+                        <td class="en-col" style="border: none;">
+                            <strong>Verification Required: Contract Auto-Renewed</strong>
+                        </td>
+                        <td class="ar-col" style="border: none;">
+                            <strong>مطلوب التحقق: تم تجديد العقد تلقائياً</strong>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <table class="info-table">
+                <tr>
+                    <td class="en-col">
+                        <div class="label">Dear {data['manager_name_en']}</div>
+                        <p class="value">A contract has been automatically renewed in the system. Please verify and update the contract details if necessary.</p>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">عزيزي/عزيزتي {data['manager_name_ar']}</div>
+                        <p class="value">تم تجديد عقد تلقائياً في النظام. يرجى التحقق وتحديث تفاصيل العقد إذا لزم الأمر.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="en-col">
+                        <div class="label">Employee Name:</div>
+                        <div class="value">{data['employee_name_en']} ({data['employee_id']})</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">اسم الموظف:</div>
+                        <div class="value">{data['employee_name_ar']} ({data['employee_id']})</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="en-col">
+                        <div class="label">New Contract End Date:</div>
+                        <div class="value">{new_end_gregorian}</div>
+                    </td>
+                    <td class="ar-col">
+                        <div class="label">تاريخ انتهاء العقد الجديد:</div>
+                        <div class="value">{new_end_ar}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="en-col">
+                        <p class="value">Please log in to the portal and verify the contract information. The verification notification will be cleared once you open and save the employee details.</p>
+                    </td>
+                    <td class="ar-col">
+                        <p class="value">يرجى تسجيل الدخول إلى البوابة والتحقق من معلومات العقد. سيتم إزالة إشعار التحقق بمجرد فتح وحفظ تفاصيل الموظف.</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="footer">
+            <p>IAU Portal - Contract Management System</p>
+            <p>نظام إدارة العقود - بوابة جامعة الإمام عبدالرحمن بن فيصل</p>
+        </div>
+    </div>
+    """
+
+    return get_base_email_template().format(content=content)

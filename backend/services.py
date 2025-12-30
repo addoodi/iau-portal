@@ -276,6 +276,78 @@ class EmployeeService:
 
         return [emp for emp in all_employees if emp.id in subordinate_ids]
 
+    def check_and_renew_expired_contracts(self) -> List[EmployeeWithBalance]:
+        """
+        Check for expired contracts and auto-renew them.
+        Returns list of employees whose contracts were auto-renewed.
+        """
+        from datetime import datetime, timedelta
+
+        all_employees = self.get_employees()
+        today = datetime.now().date()
+        renewed_employees = []
+
+        for emp in all_employees:
+            if emp.contract_end_date and emp.contract_end_date != 'N/A':
+                try:
+                    contract_end = datetime.strptime(emp.contract_end_date, '%Y-%m-%d').date()
+
+                    # If contract has expired, auto-renew it
+                    if contract_end <= today:
+                        # Get the actual employee record
+                        employee = self.employee_repository.get_by_id(emp.id)
+                        if employee:
+                            # Set new contract end date to 1 year from old date
+                            new_end_date = contract_end + timedelta(days=365)
+                            employee.contract_end_date = new_end_date.strftime('%Y-%m-%d')
+                            employee.contract_auto_renewed = True
+
+                            # Update in repository
+                            self.employee_repository.update(employee)
+
+                            # Get updated employee with balance
+                            renewed_emp = self._get_employee_with_balance(employee)
+                            renewed_employees.append(renewed_emp)
+
+                except Exception as e:
+                    continue
+
+        return renewed_employees
+
+    def get_employees_with_expiring_contracts(self, days_threshold: int = 105) -> List[EmployeeWithBalance]:
+        """
+        Get employees whose contracts are expiring within the threshold days.
+        Returns list of employees with expiring contracts.
+        """
+        from datetime import datetime, timedelta
+
+        all_employees = self.get_employees()
+        today = datetime.now().date()
+        expiring_employees = []
+
+        for emp in all_employees:
+            if emp.contract_end_date and emp.contract_end_date != 'N/A' and emp.days_remaining_in_contract:
+                if 0 < emp.days_remaining_in_contract <= days_threshold:
+                    expiring_employees.append(emp)
+
+        return expiring_employees
+
+    def get_employees_needing_contract_verification(self) -> List[EmployeeWithBalance]:
+        """
+        Get employees whose contracts were auto-renewed and need manager verification.
+        """
+        all_employees = self.get_employees()
+        return [emp for emp in all_employees if emp.contract_auto_renewed]
+
+    def clear_contract_verification_flag(self, employee_id: str) -> None:
+        """
+        Clear the contract auto-renewed flag when manager verifies the contract.
+        """
+        employee = self.employee_repository.get_by_id(employee_id)
+        if employee:
+            employee.contract_auto_renewed = False
+            self.employee_repository.update(employee)
+
     def create_user_and_employee(self, employee_create: EmployeeCreate) -> EmployeeWithBalance:
         if self.user_repository.get_by_email(employee_create.email):
             raise Exception("User with this email already exists.")
@@ -618,4 +690,63 @@ class EmailSettingsService:
 
         except Exception as e:
             print(f"Error sending email: {e}")
-            raise Exception(f"Error sending email: {e}") 
+            raise Exception(f"Error sending email: {e}")
+
+    def send_contract_expiring_notification(self, manager_email: str, manager_name_ar: str, manager_name_en: str,
+                                           employee_name_ar: str, employee_name_en: str, employee_id: str,
+                                           contract_end_date: str, days_remaining: int):
+        """
+        Send email notification to manager when employee's contract is expiring within 105 days
+        """
+        from backend.email_templates import render_contract_expiring_manager_notification
+
+        settings = self.get_email_settings()
+        if not settings or not settings.is_active:
+            print("Email service not active - skipping contract expiring notification")
+            return
+
+        html_body = render_contract_expiring_manager_notification({
+            'manager_name_ar': manager_name_ar,
+            'manager_name_en': manager_name_en,
+            'employee_name_ar': employee_name_ar,
+            'employee_name_en': employee_name_en,
+            'employee_id': employee_id,
+            'contract_end_date': contract_end_date,
+            'days_remaining': days_remaining
+        })
+
+        subject = f"Contract Renewal Required / مطلوب تجديد العقد - {employee_name_en}"
+
+        # For now, mock the email sending (same as existing send_email method)
+        print(f"MOCK EMAIL: To: {manager_email}, Subject: {subject}")
+        print(f"Contract expiring notification sent for employee {employee_id}")
+        return True
+
+    def send_contract_auto_renewed_notification(self, manager_email: str, manager_name_ar: str, manager_name_en: str,
+                                               employee_name_ar: str, employee_name_en: str, employee_id: str,
+                                               new_contract_end_date: str):
+        """
+        Send email notification to manager when employee's contract has been auto-renewed
+        """
+        from backend.email_templates import render_contract_auto_renewed_notification
+
+        settings = self.get_email_settings()
+        if not settings or not settings.is_active:
+            print("Email service not active - skipping contract auto-renewed notification")
+            return
+
+        html_body = render_contract_auto_renewed_notification({
+            'manager_name_ar': manager_name_ar,
+            'manager_name_en': manager_name_en,
+            'employee_name_ar': employee_name_ar,
+            'employee_name_en': employee_name_en,
+            'employee_id': employee_id,
+            'new_contract_end_date': new_contract_end_date
+        })
+
+        subject = f"Contract Auto-Renewed - Verification Required / تم تجديد العقد تلقائياً - {employee_name_en}"
+
+        # For now, mock the email sending (same as existing send_email method)
+        print(f"MOCK EMAIL: To: {manager_email}, Subject: {subject}")
+        print(f"Contract auto-renewed notification sent for employee {employee_id}")
+        return True 

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { FileDown, CheckCircle, LogIn, LogOut, AlertTriangle, AlertCircle, Clock, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileDown, CheckCircle, LogIn, LogOut, AlertTriangle, AlertCircle, Clock, ChevronDown, CalendarClock, CheckSquare } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
-import { downloadDashboardReport } from '../api';
+import { downloadDashboardReport, getExpiringContracts, getContractsNeedingVerification } from '../api';
 import { useNavigate } from 'react-router-dom';
 import DashboardTimeline from '../components/DashboardTimeline';
 import { getAllSubordinates } from '../utils/hierarchy';
@@ -15,6 +15,30 @@ export default function Dashboard() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
+  // Contract management state
+  const [expiringContracts, setExpiringContracts] = useState([]);
+  const [contractsNeedingVerification, setContractsNeedingVerification] = useState([]);
+
+  // Fetch contract notifications for managers/admins
+  useEffect(() => {
+    const fetchContractNotifications = async () => {
+      if (user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') {
+        try {
+          const [expiring, needingVerification] = await Promise.all([
+            getExpiringContracts(105),
+            getContractsNeedingVerification()
+          ]);
+          setExpiringContracts(expiring.expiring_contracts || []);
+          setContractsNeedingVerification(needingVerification.needing_verification || []);
+        } catch (error) {
+          console.error('Failed to fetch contract notifications:', error);
+        }
+      }
+    };
+
+    fetchContractNotifications();
+  }, [user.role]);
 
   // Calculate balances
   const availableBalance = user.vacation_balance || 0;
@@ -81,7 +105,7 @@ export default function Dashboard() {
       const filterData = {
         filter_type: reportFilter,
         language: lang,
-        date_system: dateSystem,
+        date_system: lang === 'ar' ? 'hijri' : 'gregorian', // Auto-use Hijri for Arabic
         ...(reportFilter === 'custom' && {
           start_date: customStartDate,
           end_date: customEndDate
@@ -200,6 +224,65 @@ export default function Dashboard() {
             </div>
             <button className="shrink-0 px-4 py-2 bg-yellow-600 text-white text-sm font-semibold rounded-lg hover:bg-yellow-700 transition-colors">
                 {t.reviewNow || "Review Now"}
+            </button>
+        </div>
+      )}
+
+      {/* Expiring Contracts Notification */}
+      {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') && expiringContracts.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+            <CalendarClock className="text-blue-600 shrink-0 mt-1" size={24} />
+            <div className="flex-1">
+                <h3 className="font-bold text-blue-800 text-lg">
+                  {t.contractsExpiringTitle || "Contracts Expiring Soon"}
+                </h3>
+                <p className="text-sm text-blue-700 mt-1">
+                    {t.contractsExpiringMessage?.replace('{count}', expiringContracts.length) ||
+                     `${expiringContracts.length} team member${expiringContracts.length > 1 ? 's have' : ' has'} contract${expiringContracts.length > 1 ? 's' : ''} expiring within 105 days. Please initiate the renewal process.`}
+                </p>
+                <div className="mt-2 space-y-1">
+                  {expiringContracts.slice(0, 3).map((contract) => (
+                    <div key={contract.employee_id} className="text-xs text-blue-600">
+                      • {lang === 'ar' ? contract.name_ar : contract.name_en} - {contract.days_remaining} {t.daysRemaining || "days remaining"}
+                    </div>
+                  ))}
+                  {expiringContracts.length > 3 && (
+                    <div className="text-xs text-blue-600">
+                      + {expiringContracts.length - 3} {t.more || "more"}
+                    </div>
+                  )}
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Contracts Needing Verification Notification */}
+      {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') && contractsNeedingVerification.length > 0 && (
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start gap-3 shadow-sm cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => navigate('/team')}>
+            <CheckSquare className="text-purple-600 shrink-0 mt-1" size={24} />
+            <div className="flex-1">
+                <h3 className="font-bold text-purple-800 text-lg">
+                  {t.contractsNeedVerificationTitle || "Contracts Need Verification"}
+                </h3>
+                <p className="text-sm text-purple-700 mt-1">
+                    {t.contractsNeedVerificationMessage?.replace('{count}', contractsNeedingVerification.length) ||
+                     `${contractsNeedingVerification.length} contract${contractsNeedingVerification.length > 1 ? 's have' : ' has'} been auto-renewed and require${contractsNeedingVerification.length === 1 ? 's' : ''} your verification.`}
+                </p>
+                <div className="mt-2 space-y-1">
+                  {contractsNeedingVerification.slice(0, 3).map((contract) => (
+                    <div key={contract.employee_id} className="text-xs text-purple-600">
+                      • {lang === 'ar' ? contract.name_ar : contract.name_en} - {t.newEndDate || "New end date"}: {contract.contract_end_date}
+                    </div>
+                  ))}
+                  {contractsNeedingVerification.length > 3 && (
+                    <div className="text-xs text-purple-600">
+                      + {contractsNeedingVerification.length - 3} {t.more || "more"}
+                    </div>
+                  )}
+                </div>
+            </div>
+            <button className="shrink-0 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors">
+                {t.verifyNow || "Verify Now"}
             </button>
         </div>
       )}

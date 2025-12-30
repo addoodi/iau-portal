@@ -85,6 +85,14 @@ export const TRANSLATIONS = {
     pendingApprovals: "Pending Approvals",
     pendingApprovalsMessage: "You have {count} pending leave request(s) awaiting your approval.",
     reviewNow: "Review Now",
+    contractsExpiringTitle: "Contracts Expiring Soon",
+    contractsExpiringMessage: "{count} team member(s) have contracts expiring within 105 days. Please initiate the renewal process.",
+    contractsNeedVerificationTitle: "Contracts Need Verification",
+    contractsNeedVerificationMessage: "{count} contract(s) have been auto-renewed and require your verification.",
+    verifyNow: "Verify Now",
+    daysRemaining: "days remaining",
+    newEndDate: "New end date",
+    more: "more",
     teamTimeline: "Team Timeline",
     previousMonth: "Previous Month",
     nextMonth: "Next Month",
@@ -171,7 +179,8 @@ export const TRANSLATIONS = {
     downloadForm: "Download Form",
     requiredFieldsForRole: "Unit, Manager, and Start Date are required for non-admin roles",
     employeeId: "Employee ID",
-    employeeIdWarning: "Warning: Changing this will affect leave requests, manager references, and signature files"
+    employeeIdWarning: "Warning: Changing this will affect leave requests, manager references, and signature files",
+    footerBuiltBy: "Built by Raghad Alsharhan for inquiries and support contact +966562644739"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -259,6 +268,14 @@ export const TRANSLATIONS = {
     pendingApprovals: "طلبات معلقة",
     pendingApprovalsMessage: "لديك {count} طلب(طلبات) إجازة معلقة تنتظر موافقتك.",
     reviewNow: "مراجعة الآن",
+    contractsExpiringTitle: "عقود قريبة من الانتهاء",
+    contractsExpiringMessage: "{count} عضو(أعضاء) من الفريق لديهم عقود تنتهي خلال 105 يوم. يرجى البدء بعملية التجديد.",
+    contractsNeedVerificationTitle: "عقود تحتاج إلى تحقق",
+    contractsNeedVerificationMessage: "{count} عقد(عقود) تم تجديدها تلقائياً وتحتاج إلى تحققك.",
+    verifyNow: "تحقق الآن",
+    daysRemaining: "أيام متبقية",
+    newEndDate: "تاريخ الانتهاء الجديد",
+    more: "المزيد",
     teamTimeline: "الجدول الزمني للفريق",
     previousMonth: "الشهر السابق",
     nextMonth: "الشهر التالي",
@@ -344,6 +361,7 @@ export const TRANSLATIONS = {
     downloadForm: "تحميل النموذج",
     requiredFieldsForRole: "الوحدة والمدير وتاريخ البداية مطلوبة للأدوار غير الإدارية",
     employeeId: "الرقم الوظيفي",
-    employeeIdWarning: "تحذير: تغيير هذا سيؤثر على طلبات الإجازة ومراجع المدير وملفات التوقيع"
+    employeeIdWarning: "تحذير: تغيير هذا سيؤثر على طلبات الإجازة ومراجع المدير وملفات التوقيع",
+    footerBuiltBy: "تم البناء بواسطة رغد الشرهان للاستفسارات والدعم تواصل على +966562644739"
   }
 };

@@ -36,6 +36,7 @@ class EmployeeWithBalance(Employee):
     email: Optional[EmailStr] = None
     contract_end_date: Optional[str] = None
     days_remaining_in_contract: Optional[int] = None
+    contract_auto_renewed: Optional[bool] = False  # True if contract was auto-renewed and needs verification
 
 class AttendanceLog(BaseModel):
     id: UUID = Field(default_factory=uuid4)

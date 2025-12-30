@@ -327,9 +327,36 @@ export const downloadDashboardReport = async (filterData = { filter_type: 'ytd' 
     return true;
 };
 
+// Contract Management API
+export const getExpiringContracts = async (daysThreshold = 105) => {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/contracts/expiring?days_threshold=${daysThreshold}`, {
+        headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch expiring contracts');
+    }
+
+    return await response.json();
+};
+
+export const getContractsNeedingVerification = async () => {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/contracts/needing-verification`, {
+        headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch contracts needing verification');
+    }
+
+    return await response.json();
+};
 
 
-    
+
+
 
 
 
