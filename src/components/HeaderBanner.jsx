@@ -11,18 +11,9 @@ const HeaderBanner = ({ user, onLogout }) => {
   };
 
   return (
-    <div className="bg-primary text-white">
-      {/* Top Bar with Logo and University Name */}
-      <div className="px-6 py-4 flex items-center justify-between">
-        <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <img
-            src="/header-logo.png"
-            alt="IAU Logo"
-            className="h-24 w-auto"
-          />
-        </div>
-
-        {/* Language, Date System, Logout */}
+    <div>
+      {/* Top Bar - Navy with controls */}
+      <div className="bg-primary px-6 py-3 flex items-center justify-end">
         <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {/* Date System Toggle */}
           <button
@@ -50,6 +41,17 @@ const HeaderBanner = ({ user, onLogout }) => {
             <LogOut size={16} />
             {t.logout}
           </button>
+        </div>
+      </div>
+
+      {/* Logo Bar - Light brown/beige background */}
+      <div className="bg-bg-page px-6 py-4">
+        <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <img
+            src="/header-logo.png"
+            alt="IAU Logo"
+            className="h-24 w-auto"
+          />
         </div>
       </div>
 

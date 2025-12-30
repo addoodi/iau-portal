@@ -34,7 +34,7 @@ const HorizontalNav = ({ user, onLogout }) => {
       <nav className="bg-primary">
         <div className="px-6">
           {/* Desktop Navigation (hidden on mobile) */}
-          <div className="hidden md:flex items-center h-full">
+          <div className="hidden md:flex items-stretch">
             {/* Navigation Links */}
             {navItems.map((item, index) => {
               const Icon = item.icon;
@@ -44,21 +44,17 @@ const HorizontalNav = ({ user, onLogout }) => {
                 <React.Fragment key={item.path}>
                   <NavLink
                     to={item.path}
-                    style={{
-                      backgroundColor: isActive ? '#A1832D' : 'transparent',
-                      color: '#FFFFFF',
-                      paddingTop: isActive ? '1rem' : '1rem',
-                      paddingBottom: isActive ? 'calc(1rem + 10px)' : '1rem'
-                    }}
-                    className={`flex items-center gap-2 px-6 transition-colors hover:bg-accent ${
-                      isRTL ? 'flex-row-reverse' : ''
-                    }`}
+                    className={`flex items-center gap-2 px-6 py-4 transition-colors text-white ${
+                      isActive
+                        ? 'bg-accent pb-[calc(1rem+10px)]'
+                        : 'hover:bg-accent'
+                    } ${isRTL ? 'flex-row-reverse' : ''}`}
                   >
                     <Icon size={20} />
                     <span className="font-medium text-sm">{item.label}</span>
                   </NavLink>
                   {index < navItems.length - 1 && (
-                    <div className="h-8 w-px bg-white" style={{ opacity: 0.2 }}></div>
+                    <div className="h-8 w-px bg-white self-center" style={{ opacity: 0.2 }}></div>
                   )}
                 </React.Fragment>
               );
@@ -102,13 +98,9 @@ const HorizontalNav = ({ user, onLogout }) => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    style={{
-                      backgroundColor: isActive ? '#A1832D' : 'transparent',
-                      color: '#FFFFFF'
-                    }}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent ${
-                      isRTL ? 'flex-row-reverse' : ''
-                    }`}
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors text-white ${
+                      isActive ? 'bg-accent' : 'hover:bg-accent'
+                    } ${isRTL ? 'flex-row-reverse' : ''}`}
                   >
                     <Icon size={20} />
                     <span className="font-medium text-sm">{item.label}</span>
