@@ -4,6 +4,9 @@ echo   IAU Portal - Frontend Server (Vite)
 echo ========================================
 echo.
 
+REM Change to the directory where the batch file is located
+cd /d "%~dp0"
+
 REM Check if Node.js/npm is installed
 npm --version >nul 2>&1
 if errorlevel 1 (
@@ -16,6 +19,16 @@ if errorlevel 1 (
 echo Checking Node.js and npm versions...
 node --version
 npm --version
+
+REM Check if package.json exists
+if not exist "package.json" (
+    echo ERROR: package.json not found in current directory
+    echo Current directory: %CD%
+    echo.
+    echo Please run this batch file from the project root directory
+    pause
+    exit /b 1
+)
 
 echo.
 echo Starting Vite development server with hot reload...
@@ -37,4 +50,7 @@ if errorlevel 1 (
     echo   - Check that port 3000 is not already in use
     echo   - Check the error message above for details
     pause
+    exit /b 1
 )
+
+pause

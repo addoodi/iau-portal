@@ -4,6 +4,9 @@ echo   IAU Portal - Backend Server (FastAPI)
 echo ========================================
 echo.
 
+REM Change to the directory where the batch file is located
+cd /d "%~dp0"
+
 REM Check if Python is installed
 python --version >nul 2>&1
 if errorlevel 1 (
@@ -15,6 +18,16 @@ if errorlevel 1 (
 
 echo Checking Python version...
 python --version
+
+REM Check if backend directory exists
+if not exist "backend" (
+    echo ERROR: backend directory not found
+    echo Current directory: %CD%
+    echo.
+    echo Please run this batch file from the project root directory
+    pause
+    exit /b 1
+)
 
 echo.
 echo Starting Uvicorn server with hot reload...
@@ -32,4 +45,7 @@ if errorlevel 1 (
     echo ERROR: Backend server failed to start
     echo Check the error message above for details
     pause
+    exit /b 1
 )
+
+pause
