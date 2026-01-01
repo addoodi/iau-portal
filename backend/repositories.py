@@ -368,8 +368,8 @@ class CSVEmployeeRepository(BaseRepository):
             # If file has content, try to read it
             if file_size > 100:  # More than just a header line
                 try:
-                    # CRITICAL: Force 'id' column to be string to preserve leading zeros (e.g., "0000001")
-                    df = pd.read_csv(self.file_path, encoding='utf-8', dtype={'id': str})
+                    # CRITICAL: Force ID columns to be string to preserve leading zeros and prevent type errors
+                    df = pd.read_csv(self.file_path, encoding='utf-8', dtype={'id': str, 'manager_id': str, 'unit_id': str})
                     # Apply automatic migration
                     df = migrate_csv_schema(df, expected_schema, 'employees.csv')
                     # Save migrated schema
@@ -382,7 +382,7 @@ class CSVEmployeeRepository(BaseRepository):
                     import time
                     time.sleep(0.1)  # Wait 100ms for file lock to release
                     try:
-                        df = pd.read_csv(self.file_path, encoding='utf-8', dtype={'id': str})
+                        df = pd.read_csv(self.file_path, encoding='utf-8', dtype={'id': str, 'manager_id': str, 'unit_id': str})
                         df = migrate_csv_schema(df, expected_schema, 'employees.csv')
                         df.to_csv(self.file_path, index=False)
                         return df
@@ -422,8 +422,8 @@ class CSVEmployeeRepository(BaseRepository):
             else:
                 # File has some content (likely just headers) - try to read
                 try:
-                    # CRITICAL: Force 'id' column to be string to preserve leading zeros
-                    df = pd.read_csv(self.file_path, encoding='utf-8', dtype={'id': str})
+                    # CRITICAL: Force ID columns to be string to preserve leading zeros and prevent type errors
+                    df = pd.read_csv(self.file_path, encoding='utf-8', dtype={'id': str, 'manager_id': str, 'unit_id': str})
                     df = migrate_csv_schema(df, expected_schema, 'employees.csv')
                     df.to_csv(self.file_path, index=False)
                     return df
