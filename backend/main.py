@@ -131,8 +131,8 @@ def update_employee(employee_id: str, employee_update: EmployeeUpdate,
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    # Manager can only update their direct reports, and only start_date field
-    elif current_user.role == "manager":
+    # Manager/Dean can only update their direct reports, and only start_date field
+    elif current_user.role in ["manager", "dean"]:
         target_employee = employee_service.get_employee_by_id(employee_id)
 
         if not target_employee:
@@ -147,7 +147,7 @@ def update_employee(employee_id: str, employee_update: EmployeeUpdate,
         if set(update_dict.keys()) != {'start_date'}:
             raise HTTPException(
                 status_code=403,
-                detail="Managers can only update start_date field"
+                detail="Managers/Deans can only update start_date field"
             )
 
         try:
@@ -747,8 +747,8 @@ def get_expiring_contracts(
         # Get all employees with expiring contracts
         expiring_employees = employee_service.get_employees_with_expiring_contracts(days_threshold)
 
-        # Filter by manager's team if not admin
-        if current_user.role == "manager":
+        # Filter by manager/dean's team if not admin
+        if current_user.role in ["manager", "dean"]:
             current_employee = employee_service.get_employee_by_user_id(current_user.id)
             all_employees = employee_service.get_employees()
             subordinate_ids = get_all_subordinates(current_employee.id, all_employees, include_indirect=True)
@@ -786,8 +786,8 @@ def get_contracts_needing_verification(
         # Get all employees needing verification
         needing_verification = employee_service.get_employees_needing_contract_verification()
 
-        # Filter by manager's team if not admin
-        if current_user.role == "manager":
+        # Filter by manager/dean's team if not admin
+        if current_user.role in ["manager", "dean"]:
             current_employee = employee_service.get_employee_by_user_id(current_user.id)
             all_employees = employee_service.get_employees()
             subordinate_ids = get_all_subordinates(current_employee.id, all_employees, include_indirect=True)

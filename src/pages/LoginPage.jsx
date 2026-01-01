@@ -22,24 +22,24 @@ export default function LoginPage() {
 
   return (
     <div className={`min-h-screen flex ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Left side - Navy background (branding area) */}
-      <div className="flex-1 bg-primary" style={{ marginRight: '500px' }}>
+      {/* Left side - Navy background (branding area) - hidden on mobile */}
+      <div className="hidden md:flex flex-1 bg-primary md:mr-[500px]">
         {/* Empty navy background - can add branding image here later */}
       </div>
 
-      {/* Right side - White login panel */}
-      <div className="fixed right-0 top-0 bottom-0 w-[500px] bg-white overflow-auto">
-        <div className="p-12 flex flex-col min-h-full">
+      {/* Right side - White login panel - full width on mobile, fixed 500px on desktop */}
+      <div className="w-full md:fixed md:right-0 md:top-0 md:bottom-0 md:w-[500px] bg-white overflow-auto">
+        <div className="p-6 sm:p-8 md:p-12 flex flex-col min-h-full">
           {/* Language Toggle */}
-          <div className="flex justify-end mb-8">
+          <div className="flex justify-end mb-6 sm:mb-8">
             <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="text-primary hover:text-accent font-bold text-sm transition-colors">
               {lang === 'en' ? 'العربية' : 'English'}
             </button>
           </div>
 
-          {/* Logo */}
-          <div className="flex justify-center mb-12">
-            <img src="/header-logo.png" alt="IAU Logo" className="h-28 w-auto object-contain" />
+          {/* Logo - responsive sizing */}
+          <div className="flex justify-center mb-8 sm:mb-12">
+            <img src="/header-logo.png" alt="IAU Logo" className="h-16 sm:h-20 md:h-28 w-auto max-w-full object-contain" />
           </div>
 
           {/* Login Form */}

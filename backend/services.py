@@ -352,12 +352,13 @@ class EmployeeService:
         if self.user_repository.get_by_email(employee_create.email):
             raise Exception("User with this email already exists.")
 
-        # For non-admin roles, require unit_id, manager_id, and start_date
+        # For non-admin roles, require unit_id and start_date
+        # Dean role doesn't require manager_id
         if employee_create.role != "admin":
             if not employee_create.unit_id:
                 raise Exception("Unit is required for non-admin roles")
-            if not employee_create.manager_id:
-                raise Exception("Manager is required for non-admin roles")
+            if employee_create.role != "dean" and not employee_create.manager_id:
+                raise Exception("Manager is required for non-admin roles (except dean)")
             if not employee_create.start_date:
                 raise Exception("Start date is required for non-admin roles")
 

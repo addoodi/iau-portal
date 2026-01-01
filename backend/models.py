@@ -29,6 +29,7 @@ class Employee(BaseModel):
     start_date: str # YYYY-MM-DD
     monthly_vacation_earned: float = 2.5
     signature_path: Optional[str] = None
+    contract_auto_renewed: Optional[bool] = False
 
 class EmployeeWithBalance(Employee):
     vacation_balance: float
@@ -108,6 +109,7 @@ class EmployeeCreate(BaseModel):
     start_date: Optional[str] = None  # YYYY-MM-DD
     monthly_vacation_earned: Optional[float] = 2.5
     manager_id: Optional[str] = None
+    contract_auto_renewed: Optional[bool] = False
 
 class EmployeeUpdate(BaseModel):
     employee_id: Optional[str] = None  # Allow changing employee ID (admin only)
@@ -122,6 +124,7 @@ class EmployeeUpdate(BaseModel):
     manager_id: Optional[str] = None
     monthly_vacation_earned: Optional[float] = None
     role: Optional[str] = None
+    contract_auto_renewed: Optional[bool] = None
 
 class UserPasswordUpdate(BaseModel):
     current_password: str

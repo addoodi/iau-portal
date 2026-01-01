@@ -16,9 +16,9 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
   }, [location.pathname]); // Run when route changes
 
   const menuItems = [
-    { id: 'dashboard', path: '/dashboard', icon: Home, label: t.dashboard, roles: ['admin', 'manager', 'employee'] },
-    { id: 'my-requests', path: '/my-requests', icon: Send, label: t.myRequests, roles: ['admin', 'manager', 'employee'] },
-    { id: 'approvals', path: '/approvals', icon: UserCheck, label: t.approvals, roles: ['admin', 'manager'] },
+    { id: 'dashboard', path: '/dashboard', icon: Home, label: t.dashboard, roles: ['admin', 'manager', 'dean', 'employee'] },
+    { id: 'my-requests', path: '/my-requests', icon: Send, label: t.myRequests, roles: ['admin', 'manager', 'dean', 'employee'] },
+    { id: 'approvals', path: '/approvals', icon: UserCheck, label: t.approvals, roles: ['admin', 'manager', 'dean'] },
     { id: 'users', path: '/users', icon: Users, label: t.userManagement, roles: ['admin'] },
     { id: 'units', path: '/units', icon: Building, label: t.unitManagement, roles: ['admin'] },
     { id: 'site-settings', path: '/site-settings', icon: Settings, label: t.siteSettings, roles: ['admin'] },

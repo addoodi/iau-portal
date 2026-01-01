@@ -45,6 +45,11 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
           continue;
         }
 
+        // For dean role, skip validation for manager_id (dean doesn't need a manager)
+        if (formData.role === 'dean' && key === 'manager_id') {
+          continue;
+        }
+
         if (formData[key] === '' || formData[key] === null) {
           throw new Error(`Please fill in all fields. Missing: ${key}`);
         }
@@ -94,6 +99,7 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
                         <option value="admin">Admin</option>
                         <option value="employee">Employee</option>
                         <option value="manager">Manager</option>
+                        <option value="dean">Dean</option>
                     </select>
                 </div>
             </div>
