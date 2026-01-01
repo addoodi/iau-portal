@@ -290,7 +290,8 @@ class CSVEmployeeRepository(BaseRepository):
             # If file has content, try to read it
             if file_size > 100:  # More than just a header line
                 try:
-                    df = pd.read_csv(self.file_path)
+                    # CRITICAL: Force 'id' column to be string to preserve leading zeros (e.g., "0000001")
+                    df = pd.read_csv(self.file_path, dtype={'id': str})
                     # Apply automatic migration
                     df = migrate_csv_schema(df, expected_schema, 'employees.csv')
                     # Save migrated schema
@@ -311,7 +312,8 @@ class CSVEmployeeRepository(BaseRepository):
             else:
                 # File has some content (likely just headers) - try to read
                 try:
-                    df = pd.read_csv(self.file_path)
+                    # CRITICAL: Force 'id' column to be string to preserve leading zeros
+                    df = pd.read_csv(self.file_path, dtype={'id': str})
                     df = migrate_csv_schema(df, expected_schema, 'employees.csv')
                     df.to_csv(self.file_path, index=False)
                     return df
