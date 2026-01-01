@@ -50,6 +50,11 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
           continue;
         }
 
+        // Employee ID is optional for all roles (will be auto-generated if not provided)
+        if (key === 'employee_id') {
+          continue;
+        }
+
         if (formData[key] === '' || formData[key] === null) {
           throw new Error(`Please fill in all fields. Missing: ${key}`);
         }
