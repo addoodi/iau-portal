@@ -111,7 +111,22 @@ class CSVUserRepository(BaseRepository):
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
-                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                # CRITICAL: File might be temporarily 0 bytes during a write operation
+                # Wait and re-check before concluding it's truly empty
+                print(f"WARNING: {self.file_path} is 0 bytes. Waiting to see if it's being written...")
+                import time
+                time.sleep(0.15)  # Wait 150ms for write to complete
+
+                # Re-check file size
+                if os.path.exists(self.file_path):
+                    new_size = os.path.getsize(self.file_path)
+                    if new_size > 0:
+                        print(f"File now has {new_size} bytes. Retrying read...")
+                        # File was being written, retry the whole load process
+                        return self._load_df()
+
+                # Still 0 bytes - truly empty, safe to create
+                print(f"Info: {self.file_path} confirmed empty after retry. Creating with schema.")
                 df = pd.DataFrame(columns=list(expected_schema.keys()))
                 df.to_csv(self.file_path, index=False)
                 return df
@@ -236,7 +251,22 @@ class CSVEmailSettingsRepository(BaseRepository):
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
-                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                # CRITICAL: File might be temporarily 0 bytes during a write operation
+                # Wait and re-check before concluding it's truly empty
+                print(f"WARNING: {self.file_path} is 0 bytes. Waiting to see if it's being written...")
+                import time
+                time.sleep(0.15)  # Wait 150ms for write to complete
+
+                # Re-check file size
+                if os.path.exists(self.file_path):
+                    new_size = os.path.getsize(self.file_path)
+                    if new_size > 0:
+                        print(f"File now has {new_size} bytes. Retrying read...")
+                        # File was being written, retry the whole load process
+                        return self._load_df()
+
+                # Still 0 bytes - truly empty, safe to create
+                print(f"Info: {self.file_path} confirmed empty after retry. Creating with schema.")
                 df = pd.DataFrame(columns=list(expected_schema.keys()))
                 df.to_csv(self.file_path, index=False)
                 return df
@@ -370,7 +400,22 @@ class CSVEmployeeRepository(BaseRepository):
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
-                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                # CRITICAL: File might be temporarily 0 bytes during a write operation
+                # Wait and re-check before concluding it's truly empty
+                print(f"WARNING: {self.file_path} is 0 bytes. Waiting to see if it's being written...")
+                import time
+                time.sleep(0.15)  # Wait 150ms for write to complete
+
+                # Re-check file size
+                if os.path.exists(self.file_path):
+                    new_size = os.path.getsize(self.file_path)
+                    if new_size > 0:
+                        print(f"File now has {new_size} bytes. Retrying read...")
+                        # File was being written, retry the whole load process
+                        return self._load_df()
+
+                # Still 0 bytes - truly empty, safe to create
+                print(f"Info: {self.file_path} confirmed empty after retry. Creating with schema.")
                 df = pd.DataFrame(columns=list(expected_schema.keys()))
                 df.to_csv(self.file_path, index=False)
                 return df
@@ -510,7 +555,22 @@ class CSVLeaveRequestRepository(BaseRepository):
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
-                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                # CRITICAL: File might be temporarily 0 bytes during a write operation
+                # Wait and re-check before concluding it's truly empty
+                print(f"WARNING: {self.file_path} is 0 bytes. Waiting to see if it's being written...")
+                import time
+                time.sleep(0.15)  # Wait 150ms for write to complete
+
+                # Re-check file size
+                if os.path.exists(self.file_path):
+                    new_size = os.path.getsize(self.file_path)
+                    if new_size > 0:
+                        print(f"File now has {new_size} bytes. Retrying read...")
+                        # File was being written, retry the whole load process
+                        return self._load_df()
+
+                # Still 0 bytes - truly empty, safe to create
+                print(f"Info: {self.file_path} confirmed empty after retry. Creating with schema.")
                 df = pd.DataFrame(columns=list(expected_schema.keys()))
                 df.to_csv(self.file_path, index=False)
                 return df
@@ -641,7 +701,22 @@ class CSVUnitRepository(BaseRepository):
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
-                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                # CRITICAL: File might be temporarily 0 bytes during a write operation
+                # Wait and re-check before concluding it's truly empty
+                print(f"WARNING: {self.file_path} is 0 bytes. Waiting to see if it's being written...")
+                import time
+                time.sleep(0.15)  # Wait 150ms for write to complete
+
+                # Re-check file size
+                if os.path.exists(self.file_path):
+                    new_size = os.path.getsize(self.file_path)
+                    if new_size > 0:
+                        print(f"File now has {new_size} bytes. Retrying read...")
+                        # File was being written, retry the whole load process
+                        return self._load_df()
+
+                # Still 0 bytes - truly empty, safe to create
+                print(f"Info: {self.file_path} confirmed empty after retry. Creating with schema.")
                 df = pd.DataFrame(columns=list(expected_schema.keys()))
                 df.to_csv(self.file_path, index=False)
                 return df
@@ -761,7 +836,22 @@ class CSVAttendanceRepository(BaseRepository):
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
-                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                # CRITICAL: File might be temporarily 0 bytes during a write operation
+                # Wait and re-check before concluding it's truly empty
+                print(f"WARNING: {self.file_path} is 0 bytes. Waiting to see if it's being written...")
+                import time
+                time.sleep(0.15)  # Wait 150ms for write to complete
+
+                # Re-check file size
+                if os.path.exists(self.file_path):
+                    new_size = os.path.getsize(self.file_path)
+                    if new_size > 0:
+                        print(f"File now has {new_size} bytes. Retrying read...")
+                        # File was being written, retry the whole load process
+                        return self._load_df()
+
+                # Still 0 bytes - truly empty, safe to create
+                print(f"Info: {self.file_path} confirmed empty after retry. Creating with schema.")
                 df = pd.DataFrame(columns=list(expected_schema.keys()))
                 df.to_csv(self.file_path, index=False)
                 return df
