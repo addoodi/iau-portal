@@ -8,7 +8,7 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
   const [formData, setFormData] = useState({
     email: initialUser?.email || '',
     password: '',
-    role: initialUser?.role || 'user',
+    role: initialUser?.role || 'employee',
     employee_id: initialUser?.id || '',
     first_name_en: initialUser?.first_name_en || '',
     last_name_en: initialUser?.last_name_en || '',
@@ -95,11 +95,10 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
                 <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">{t.role}</label>
                     <select name="role" className="w-full border border-gray-300 p-2 text-sm bg-white focus:border-primary focus:outline-none" value={formData.role} onChange={handleChange}>
-                        <option value="user">User</option>
                         <option value="admin">Admin</option>
-                        <option value="employee">Employee</option>
-                        <option value="manager">Manager</option>
                         <option value="dean">Dean</option>
+                        <option value="manager">Manager</option>
+                        <option value="employee">Employee</option>
                     </select>
                 </div>
             </div>

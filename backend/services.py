@@ -354,11 +354,14 @@ class EmployeeService:
 
         # For non-admin roles, require unit_id and start_date
         # Dean role doesn't require manager_id
-        if employee_create.role != "admin":
+        role_lower = employee_create.role.lower()
+
+        if role_lower != "admin":
             if not employee_create.unit_id:
                 raise Exception("Unit is required for non-admin roles")
-            if employee_create.role != "dean" and not employee_create.manager_id:
-                raise Exception("Manager is required for non-admin roles (except dean)")
+            # Dean doesn't need a manager
+            if role_lower not in ["dean", "admin"] and not employee_create.manager_id:
+                raise Exception("Manager is required for non-dean/non-admin roles")
             if not employee_create.start_date:
                 raise Exception("Start date is required for non-admin roles")
 
