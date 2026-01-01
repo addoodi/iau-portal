@@ -8,6 +8,7 @@ services:
       args:
         - CACHEBUST=${CACHEBUST:-1}
       no_cache: false
+    pull_policy: build
     container_name: iau-portal-backend
     restart: unless-stopped
     # Backend is only accessible through nginx proxy, no direct external access needed
@@ -37,6 +38,7 @@ services:
       args:
         - CACHEBUST=${CACHEBUST:-1}
       no_cache: false
+    pull_policy: build
     container_name: iau-portal-frontend
     restart: unless-stopped
     ports:
