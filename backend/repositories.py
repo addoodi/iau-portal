@@ -73,24 +73,45 @@ class CSVUserRepository(BaseRepository):
             'is_active': True
         }
 
-        if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            try:
-                df = pd.read_csv(self.file_path)
-                # Apply automatic migration
-                df = migrate_csv_schema(df, expected_schema, 'users.csv')
-                # Save migrated schema
-                df.to_csv(self.file_path, index=False)
-                return df
-            except pd.errors.EmptyDataError:
-                # File exists but is empty or has no columns - recreate with proper schema
-                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
-                df = pd.DataFrame(columns=list(expected_schema.keys()))
-                # Ensure directory exists
-                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-                df.to_csv(self.file_path, index=False)
-                return df
+        if os.path.exists(self.file_path):
+            file_size = os.path.getsize(self.file_path)
 
-        # File doesn't exist or is completely empty - create with proper schema
+            # If file has content, try to read it
+            if file_size > 100:  # More than just a header line
+                try:
+                    df = pd.read_csv(self.file_path)
+                    # Apply automatic migration
+                    df = migrate_csv_schema(df, expected_schema, 'users.csv')
+                    # Save migrated schema
+                    df.to_csv(self.file_path, index=False)
+                    return df
+                except Exception as e:
+                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
+                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+
+            # File is very small (just headers or empty) - only recreate if truly empty
+            elif file_size == 0:
+                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                df.to_csv(self.file_path, index=False)
+                return df
+            else:
+                # File has some content (likely just headers) - try to read
+                try:
+                    df = pd.read_csv(self.file_path)
+                    df = migrate_csv_schema(df, expected_schema, 'users.csv')
+                    df.to_csv(self.file_path, index=False)
+                    return df
+                except pd.errors.EmptyDataError:
+                    # File has headers but no data rows - that's OK
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    df.to_csv(self.file_path, index=False)
+                    return df
+
+        # File doesn't exist - create new
+        print(f"Info: {self.file_path} does not exist. Creating new file.")
         df = pd.DataFrame(columns=list(expected_schema.keys()))
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         df.to_csv(self.file_path, index=False)
@@ -151,25 +172,47 @@ class CSVEmailSettingsRepository(BaseRepository):
             'is_active': False
         }
 
-        if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            try:
-                df = pd.read_csv(self.file_path)
-                # Apply automatic migration
-                df = migrate_csv_schema(df, expected_schema, 'email_settings.csv')
-                # Save migrated schema
-                df.to_csv(self.file_path, index=False)
-                # Ensure it's not empty and has the correct ID
-                if not df.empty and df['id'].iloc[0] == 1:
-                    return df
-            except pd.errors.EmptyDataError:
-                # File exists but is empty or has no columns - recreate with proper schema
-                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
+        if os.path.exists(self.file_path):
+            file_size = os.path.getsize(self.file_path)
+
+            # If file has content (more than just headers), try to read it
+            if file_size > 100:  # More than just a header line
+                try:
+                    df = pd.read_csv(self.file_path)
+                    # Apply automatic migration
+                    df = migrate_csv_schema(df, expected_schema, 'email_settings.csv')
+                    # Save migrated schema
+                    df.to_csv(self.file_path, index=False)
+                    # Ensure it's not empty and has the correct ID
+                    if not df.empty and df['id'].iloc[0] == 1:
+                        return df
+                except Exception as e:
+                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
+                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+
+            # File is very small (just headers or empty) - only recreate if truly empty
+            elif file_size == 0:
+                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
                 df = pd.DataFrame(columns=list(expected_schema.keys()))
-                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
                 df.to_csv(self.file_path, index=False)
                 return df
+            else:
+                # File has some content (likely just headers) - try to read
+                try:
+                    df = pd.read_csv(self.file_path)
+                    df = migrate_csv_schema(df, expected_schema, 'email_settings.csv')
+                    df.to_csv(self.file_path, index=False)
+                    return df
+                except pd.errors.EmptyDataError:
+                    # File has headers but no data rows - that's OK
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    df.to_csv(self.file_path, index=False)
+                    return df
 
-        # File doesn't exist or is completely empty - create with proper schema
+        # File doesn't exist - create new
+        print(f"Info: {self.file_path} does not exist. Creating new file.")
         df = pd.DataFrame(columns=list(expected_schema.keys()))
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         df.to_csv(self.file_path, index=False)
@@ -241,23 +284,45 @@ class CSVEmployeeRepository(BaseRepository):
             'contract_auto_renewed': False  # New field for contract management
         }
 
-        if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            try:
-                df = pd.read_csv(self.file_path)
-                # Apply automatic migration
-                df = migrate_csv_schema(df, expected_schema, 'employees.csv')
-                # Save migrated schema
-                df.to_csv(self.file_path, index=False)
-                return df
-            except pd.errors.EmptyDataError:
-                # File exists but is empty or has no columns - recreate with proper schema
-                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
-                df = pd.DataFrame(columns=list(expected_schema.keys()))
-                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-                df.to_csv(self.file_path, index=False)
-                return df
+        if os.path.exists(self.file_path):
+            file_size = os.path.getsize(self.file_path)
 
-        # File doesn't exist or is completely empty - create with proper schema
+            # If file has content, try to read it
+            if file_size > 100:  # More than just a header line
+                try:
+                    df = pd.read_csv(self.file_path)
+                    # Apply automatic migration
+                    df = migrate_csv_schema(df, expected_schema, 'employees.csv')
+                    # Save migrated schema
+                    df.to_csv(self.file_path, index=False)
+                    return df
+                except Exception as e:
+                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
+                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+
+            # File is very small (just headers or empty) - only recreate if truly empty
+            elif file_size == 0:
+                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                df.to_csv(self.file_path, index=False)
+                return df
+            else:
+                # File has some content (likely just headers) - try to read
+                try:
+                    df = pd.read_csv(self.file_path)
+                    df = migrate_csv_schema(df, expected_schema, 'employees.csv')
+                    df.to_csv(self.file_path, index=False)
+                    return df
+                except pd.errors.EmptyDataError:
+                    # File has headers but no data rows - that's OK
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    df.to_csv(self.file_path, index=False)
+                    return df
+
+        # File doesn't exist - create new
+        print(f"Info: {self.file_path} does not exist. Creating new file.")
         df = pd.DataFrame(columns=list(expected_schema.keys()))
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         df.to_csv(self.file_path, index=False)
@@ -329,27 +394,51 @@ class CSVLeaveRequestRepository(BaseRepository):
             'attachments': '[]'  # Empty list as string
         }
 
-        if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            try:
-                df = pd.read_csv(self.file_path)
-                # Apply automatic migration
-                df = migrate_csv_schema(df, expected_schema, 'leave_requests.csv')
-                # Save migrated schema
-                df.to_csv(self.file_path, index=False)
+        if os.path.exists(self.file_path):
+            file_size = os.path.getsize(self.file_path)
 
-                # Convert 'attachments' column from string to list
-                if 'attachments' in df.columns:
-                    df['attachments'] = df['attachments'].apply(lambda x: eval(x) if pd.notna(x) else [])
-                return df
-            except pd.errors.EmptyDataError:
-                # File exists but is empty or has no columns - recreate with proper schema
-                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
+            # If file has content, try to read it
+            if file_size > 100:  # More than just a header line
+                try:
+                    df = pd.read_csv(self.file_path)
+                    # Apply automatic migration
+                    df = migrate_csv_schema(df, expected_schema, 'leave_requests.csv')
+                    # Save migrated schema
+                    df.to_csv(self.file_path, index=False)
+
+                    # Convert 'attachments' column from string to list
+                    if 'attachments' in df.columns:
+                        df['attachments'] = df['attachments'].apply(lambda x: eval(x) if pd.notna(x) else [])
+                    return df
+                except Exception as e:
+                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
+                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+
+            # File is very small (just headers or empty) - only recreate if truly empty
+            elif file_size == 0:
+                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
                 df = pd.DataFrame(columns=list(expected_schema.keys()))
-                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
                 df.to_csv(self.file_path, index=False)
                 return df
+            else:
+                # File has some content (likely just headers) - try to read
+                try:
+                    df = pd.read_csv(self.file_path)
+                    df = migrate_csv_schema(df, expected_schema, 'leave_requests.csv')
+                    df.to_csv(self.file_path, index=False)
+                    if 'attachments' in df.columns:
+                        df['attachments'] = df['attachments'].apply(lambda x: eval(x) if pd.notna(x) else [])
+                    return df
+                except pd.errors.EmptyDataError:
+                    # File has headers but no data rows - that's OK
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    df.to_csv(self.file_path, index=False)
+                    return df
 
-        # File doesn't exist or is completely empty - create with proper schema
+        # File doesn't exist - create new
+        print(f"Info: {self.file_path} does not exist. Creating new file.")
         df = pd.DataFrame(columns=list(expected_schema.keys()))
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         df.to_csv(self.file_path, index=False)
@@ -417,23 +506,45 @@ class CSVUnitRepository(BaseRepository):
             'name_ar': None
         }
 
-        if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            try:
-                df = pd.read_csv(self.file_path)
-                # Apply automatic migration
-                df = migrate_csv_schema(df, expected_schema, 'units.csv')
-                # Save migrated schema
-                df.to_csv(self.file_path, index=False)
-                return df
-            except pd.errors.EmptyDataError:
-                # File exists but is empty or has no columns - recreate with proper schema
-                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
-                df = pd.DataFrame(columns=list(expected_schema.keys()))
-                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-                df.to_csv(self.file_path, index=False)
-                return df
+        if os.path.exists(self.file_path):
+            file_size = os.path.getsize(self.file_path)
 
-        # File doesn't exist or is completely empty - create with proper schema
+            # If file has content, try to read it
+            if file_size > 100:  # More than just a header line
+                try:
+                    df = pd.read_csv(self.file_path)
+                    # Apply automatic migration
+                    df = migrate_csv_schema(df, expected_schema, 'units.csv')
+                    # Save migrated schema
+                    df.to_csv(self.file_path, index=False)
+                    return df
+                except Exception as e:
+                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
+                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+
+            # File is very small (just headers or empty) - only recreate if truly empty
+            elif file_size == 0:
+                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                df.to_csv(self.file_path, index=False)
+                return df
+            else:
+                # File has some content (likely just headers) - try to read
+                try:
+                    df = pd.read_csv(self.file_path)
+                    df = migrate_csv_schema(df, expected_schema, 'units.csv')
+                    df.to_csv(self.file_path, index=False)
+                    return df
+                except pd.errors.EmptyDataError:
+                    # File has headers but no data rows - that's OK
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    df.to_csv(self.file_path, index=False)
+                    return df
+
+        # File doesn't exist - create new
+        print(f"Info: {self.file_path} does not exist. Creating new file.")
         df = pd.DataFrame(columns=list(expected_schema.keys()))
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         df.to_csv(self.file_path, index=False)
@@ -492,23 +603,45 @@ class CSVAttendanceRepository(BaseRepository):
             'status': 'Present'
         }
 
-        if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            try:
-                df = pd.read_csv(self.file_path)
-                # Apply automatic migration
-                df = migrate_csv_schema(df, expected_schema, 'attendance_logs.csv')
-                # Save migrated schema
-                df.to_csv(self.file_path, index=False)
-                return df
-            except pd.errors.EmptyDataError:
-                # File exists but is empty or has no columns - recreate with proper schema
-                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
-                df = pd.DataFrame(columns=list(expected_schema.keys()))
-                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-                df.to_csv(self.file_path, index=False)
-                return df
+        if os.path.exists(self.file_path):
+            file_size = os.path.getsize(self.file_path)
 
-        # File doesn't exist or is completely empty - create with proper schema
+            # If file has content (more than just headers), try to read it
+            if file_size > 100:  # More than just a header line
+                try:
+                    df = pd.read_csv(self.file_path)
+                    # Apply automatic migration
+                    df = migrate_csv_schema(df, expected_schema, 'attendance_logs.csv')
+                    # Save migrated schema
+                    df.to_csv(self.file_path, index=False)
+                    return df
+                except Exception as e:
+                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
+                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+
+            # File is very small (just headers or empty) - only recreate if truly empty
+            elif file_size == 0:
+                print(f"Info: {self.file_path} is completely empty (0 bytes). Creating with schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                df.to_csv(self.file_path, index=False)
+                return df
+            else:
+                # File has some content (likely just headers) - try to read
+                try:
+                    df = pd.read_csv(self.file_path)
+                    df = migrate_csv_schema(df, expected_schema, 'attendance_logs.csv')
+                    df.to_csv(self.file_path, index=False)
+                    return df
+                except pd.errors.EmptyDataError:
+                    # File has headers but no data rows - that's OK
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    df.to_csv(self.file_path, index=False)
+                    return df
+
+        # File doesn't exist - create new
+        print(f"Info: {self.file_path} does not exist. Creating new file.")
         df = pd.DataFrame(columns=list(expected_schema.keys()))
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         df.to_csv(self.file_path, index=False)
