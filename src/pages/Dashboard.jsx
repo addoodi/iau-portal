@@ -80,14 +80,6 @@ export default function Dashboard() {
     return new Date(isoString).toLocaleTimeString(lang === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Determine attendance status
-  const isOnLeave = attendance?.status === "On Leave";
-  const statusBgColor = isOnLeave ? "bg-orange-100" : "bg-green-100";
-  const statusTextColor = isOnLeave ? "text-orange-800" : "text-green-800";
-  const statusText = isOnLeave
-    ? `${t.onLeave || "On Leave"} (${t[attendance.vacation_type] || attendance.vacation_type})`
-    : t.present || "Present";
-  
   const getFilterLabel = () => {
     const labels = {
       'ytd': t.ytd || 'Year to Date',
@@ -287,20 +279,10 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Status Widget - Colored Background */}
-        <div className={`${statusBgColor} p-6 border ${isOnLeave ? 'border-orange-200' : 'border-green-200'} flex flex-col items-center justify-center min-h-[140px]`}>
-          <h3 className={`text-xs font-semibold uppercase tracking-wider mb-3 ${statusTextColor}`}>
-            {t.status || "Status"}
-          </h3>
-          <div className={`text-center text-lg font-bold ${statusTextColor}`}>
-            {statusText}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 gap-6">
 
         {/* Vacation Balance Widget - With Contract End */}
-        <div className="bg-white p-4 border border-gray-200 lg:col-span-2">
+        <div className="bg-white p-4 border border-gray-200">
           <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3 tracking-wider">{t.vacationBalance}</h3>
           <div className="grid grid-cols-3 gap-3 mb-3">
             <div className="p-3 bg-green-50 border border-green-200 text-center">

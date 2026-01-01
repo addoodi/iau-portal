@@ -188,7 +188,13 @@ export const TRANSLATIONS = {
     employees: "Employees",
     settings: "Settings",
     admin: "Admin",
-    hijri: "Hijri"
+    hijri: "Hijri",
+    onDuty: "On Duty",
+    allMembers: "All Members",
+    returnToWorkDate: "Return to Work Date",
+    noTeamMembersInUnit: "No team members in this unit",
+    switchToHijri: "Switch to Hijri Calendar",
+    switchToGregorian: "Switch to Gregorian Calendar"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -378,6 +384,12 @@ export const TRANSLATIONS = {
     employees: "الموظفون",
     settings: "الإعدادات",
     admin: "مدير",
-    hijri: "هجري"
+    hijri: "هجري",
+    onDuty: "في الخدمة",
+    allMembers: "جميع الأعضاء",
+    returnToWorkDate: "تاريخ العودة للعمل",
+    noTeamMembersInUnit: "لا يوجد أعضاء فريق في هذه الوحدة",
+    switchToHijri: "التبديل إلى التقويم الهجري",
+    switchToGregorian: "التبديل إلى التقويم الميلادي"
   }
 };

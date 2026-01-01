@@ -73,20 +73,32 @@ function ProtectedRoute({ children }) {
 function MainLayout() {
   const { t, isRTL, user, setUser } = usePortal();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
 
   const handleLogout = () => {
     setUser(null);
   };
+
+  // Detect scroll for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      // Trigger sticky state after scrolling 200px (past the header/banner)
+      setIsSticky(window.scrollY > 200);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className={`min-h-screen flex flex-col font-sans ${isRTL ? 'dir-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Container wrapper for header and content */}
       <div className="max-w-7xl mx-auto w-full">
         {/* University Header with Logo & Banner */}
-        <HeaderBanner user={user} onLogout={handleLogout} />
+        <HeaderBanner user={user} onLogout={handleLogout} isSticky={isSticky} />
 
         {/* Horizontal Navigation Bar */}
-        <HorizontalNav user={user} onLogout={handleLogout} />
+        <HorizontalNav user={user} onLogout={handleLogout} isSticky={isSticky} />
 
         {/* Main Content Area */}
         <main className="flex-1 px-6 py-8 bg-bg-page min-h-screen">

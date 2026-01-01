@@ -5,8 +5,9 @@ import { usePortal } from '../context/PortalContext';
 import { convertToHijri, getHijriMonthNames } from '../utils/hijriUtils';
 
 export default function DashboardTimeline({ teamMembers, requests }) {
-  const { t, lang, isHijri, isRTL } = usePortal();
+  const { t, lang, isHijri, isRTL, units } = usePortal();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedUnit, setSelectedUnit] = useState('all');
 
   // Generate 60 days starting from current date
   const days = useMemo(() => {
@@ -21,6 +22,14 @@ export default function DashboardTimeline({ teamMembers, requests }) {
     }
     return result;
   }, [currentDate]);
+
+  // Filter team members by unit
+  const filteredTeamMembers = useMemo(() => {
+    if (selectedUnit === 'all') {
+      return teamMembers;
+    }
+    return teamMembers.filter(member => member.unit_id === selectedUnit);
+  }, [teamMembers, selectedUnit]);
 
   // Navigate to previous/next month
   const goToPreviousMonth = () => {
@@ -124,9 +133,24 @@ export default function DashboardTimeline({ teamMembers, requests }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100">
       {/* Header */}
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="p-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
         <h3 className="text-lg font-bold text-[#1e2c54]">{t.teamTimeline || "Team Timeline"}</h3>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Unit Filter */}
+          <select
+            value={selectedUnit}
+            onChange={(e) => setSelectedUnit(e.target.value)}
+            className="px-3 py-1 border border-gray-300 text-sm bg-white hover:border-gray-400 transition-colors"
+          >
+            <option value="all">{t.allMembers || "All Members"}</option>
+            {units && units.map(unit => (
+              <option key={unit.id} value={unit.id}>
+                {lang === 'ar' ? unit.name_ar : unit.name_en}
+              </option>
+            ))}
+          </select>
+
           <span className="text-sm text-gray-600">{getMonthName()}</span>
           <div className="flex gap-1">
             <button
@@ -186,17 +210,20 @@ export default function DashboardTimeline({ teamMembers, requests }) {
             </tr>
           </thead>
           <tbody>
-            {teamMembers.map((member) => {
+            {filteredTeamMembers.map((member) => {
               const currentStatus = getEmployeeCurrentStatus(member.id);
-              const cellBgColor = currentStatus === 'on-leave' ? 'bg-orange-50' : 'bg-green-50';
-              const cellBorderColor = currentStatus === 'on-leave' ? 'border-orange-200' : 'border-green-200';
+              // Green line for present, orange/amber for on leave
+              const statusLineColor = currentStatus === 'on-leave' ? 'bg-orange-500' : 'bg-green-500';
 
               return (
               <tr key={member.id} className="hover:bg-gray-50 transition-colors">
-                <td className={`sticky left-0 ${cellBgColor} z-10 p-2 text-sm border-r-2 ${cellBorderColor} border-b border-gray-100`}>
+                <td className="sticky left-0 bg-white z-10 p-2 text-sm border-r border-gray-200 border-b border-gray-100">
                   <Link to={`/employee/${member.id}`} className="block">
-                    <div className="flex items-center justify-between cursor-pointer hover:opacity-80">
-                      <span className="font-medium text-gray-800">
+                    <div className="flex items-center justify-between cursor-pointer hover:opacity-80 relative">
+                      {/* Vertical Status Line on the edge */}
+                      <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} top-0 bottom-0 w-1 ${statusLineColor}`}></div>
+
+                      <span className={`font-medium text-gray-800 ${isRTL ? 'pr-3' : 'pl-3'}`}>
                         {lang === 'ar' ? member.name_ar : member.name_en}
                       </span>
                       <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
@@ -228,9 +255,11 @@ export default function DashboardTimeline({ teamMembers, requests }) {
         </table>
       </div>
 
-      {teamMembers.length === 0 && (
+      {filteredTeamMembers.length === 0 && (
         <div className="p-8 text-center text-gray-500">
-          {t.noTeamMembers || "No team members to display"}
+          {selectedUnit === 'all'
+            ? (t.noTeamMembers || "No team members to display")
+            : (t.noTeamMembersInUnit || "No team members in this unit")}
         </div>
       )}
     </div>

@@ -33,7 +33,7 @@ export default function MyRequests() {
   };
 
   return (
-    <div className="bg-white border border-gray-200 min-h-[500px]">
+    <div className="bg-white border border-gray-200">
       <div className="p-6 border-b border-gray-200 bg-gray-50">
         <h2 className="text-xl font-bold text-primary">{t.myRequests}</h2>
       </div>
