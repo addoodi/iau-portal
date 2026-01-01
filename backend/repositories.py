@@ -74,14 +74,27 @@ class CSVUserRepository(BaseRepository):
         }
 
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            df = pd.read_csv(self.file_path)
-            # Apply automatic migration
-            df = migrate_csv_schema(df, expected_schema, 'users.csv')
-            # Save migrated schema
-            df.to_csv(self.file_path, index=False)
-            return df
+            try:
+                df = pd.read_csv(self.file_path)
+                # Apply automatic migration
+                df = migrate_csv_schema(df, expected_schema, 'users.csv')
+                # Save migrated schema
+                df.to_csv(self.file_path, index=False)
+                return df
+            except pd.errors.EmptyDataError:
+                # File exists but is empty or has no columns - recreate with proper schema
+                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                # Ensure directory exists
+                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+                df.to_csv(self.file_path, index=False)
+                return df
 
-        return pd.DataFrame(columns=list(expected_schema.keys()))
+        # File doesn't exist or is completely empty - create with proper schema
+        df = pd.DataFrame(columns=list(expected_schema.keys()))
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        df.to_csv(self.file_path, index=False)
+        return df
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
@@ -139,16 +152,28 @@ class CSVEmailSettingsRepository(BaseRepository):
         }
 
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            df = pd.read_csv(self.file_path)
-            # Apply automatic migration
-            df = migrate_csv_schema(df, expected_schema, 'email_settings.csv')
-            # Save migrated schema
-            df.to_csv(self.file_path, index=False)
-            # Ensure it's not empty and has the correct ID
-            if not df.empty and df['id'].iloc[0] == 1:
+            try:
+                df = pd.read_csv(self.file_path)
+                # Apply automatic migration
+                df = migrate_csv_schema(df, expected_schema, 'email_settings.csv')
+                # Save migrated schema
+                df.to_csv(self.file_path, index=False)
+                # Ensure it's not empty and has the correct ID
+                if not df.empty and df['id'].iloc[0] == 1:
+                    return df
+            except pd.errors.EmptyDataError:
+                # File exists but is empty or has no columns - recreate with proper schema
+                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+                df.to_csv(self.file_path, index=False)
                 return df
 
-        return pd.DataFrame(columns=list(expected_schema.keys()))
+        # File doesn't exist or is completely empty - create with proper schema
+        df = pd.DataFrame(columns=list(expected_schema.keys()))
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        df.to_csv(self.file_path, index=False)
+        return df
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
@@ -217,14 +242,26 @@ class CSVEmployeeRepository(BaseRepository):
         }
 
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            df = pd.read_csv(self.file_path)
-            # Apply automatic migration
-            df = migrate_csv_schema(df, expected_schema, 'employees.csv')
-            # Save migrated schema
-            df.to_csv(self.file_path, index=False)
-            return df
+            try:
+                df = pd.read_csv(self.file_path)
+                # Apply automatic migration
+                df = migrate_csv_schema(df, expected_schema, 'employees.csv')
+                # Save migrated schema
+                df.to_csv(self.file_path, index=False)
+                return df
+            except pd.errors.EmptyDataError:
+                # File exists but is empty or has no columns - recreate with proper schema
+                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+                df.to_csv(self.file_path, index=False)
+                return df
 
-        return pd.DataFrame(columns=list(expected_schema.keys()))
+        # File doesn't exist or is completely empty - create with proper schema
+        df = pd.DataFrame(columns=list(expected_schema.keys()))
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        df.to_csv(self.file_path, index=False)
+        return df
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
@@ -293,18 +330,30 @@ class CSVLeaveRequestRepository(BaseRepository):
         }
 
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            df = pd.read_csv(self.file_path)
-            # Apply automatic migration
-            df = migrate_csv_schema(df, expected_schema, 'leave_requests.csv')
-            # Save migrated schema
-            df.to_csv(self.file_path, index=False)
+            try:
+                df = pd.read_csv(self.file_path)
+                # Apply automatic migration
+                df = migrate_csv_schema(df, expected_schema, 'leave_requests.csv')
+                # Save migrated schema
+                df.to_csv(self.file_path, index=False)
 
-            # Convert 'attachments' column from string to list
-            if 'attachments' in df.columns:
-                df['attachments'] = df['attachments'].apply(lambda x: eval(x) if pd.notna(x) else [])
-            return df
+                # Convert 'attachments' column from string to list
+                if 'attachments' in df.columns:
+                    df['attachments'] = df['attachments'].apply(lambda x: eval(x) if pd.notna(x) else [])
+                return df
+            except pd.errors.EmptyDataError:
+                # File exists but is empty or has no columns - recreate with proper schema
+                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+                df.to_csv(self.file_path, index=False)
+                return df
 
-        return pd.DataFrame(columns=list(expected_schema.keys()))
+        # File doesn't exist or is completely empty - create with proper schema
+        df = pd.DataFrame(columns=list(expected_schema.keys()))
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        df.to_csv(self.file_path, index=False)
+        return df
 
     def _save_df(self):
         # Convert 'attachments' list to string before saving
@@ -369,14 +418,26 @@ class CSVUnitRepository(BaseRepository):
         }
 
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            df = pd.read_csv(self.file_path)
-            # Apply automatic migration
-            df = migrate_csv_schema(df, expected_schema, 'units.csv')
-            # Save migrated schema
-            df.to_csv(self.file_path, index=False)
-            return df
+            try:
+                df = pd.read_csv(self.file_path)
+                # Apply automatic migration
+                df = migrate_csv_schema(df, expected_schema, 'units.csv')
+                # Save migrated schema
+                df.to_csv(self.file_path, index=False)
+                return df
+            except pd.errors.EmptyDataError:
+                # File exists but is empty or has no columns - recreate with proper schema
+                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+                df.to_csv(self.file_path, index=False)
+                return df
 
-        return pd.DataFrame(columns=list(expected_schema.keys()))
+        # File doesn't exist or is completely empty - create with proper schema
+        df = pd.DataFrame(columns=list(expected_schema.keys()))
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        df.to_csv(self.file_path, index=False)
+        return df
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
@@ -432,14 +493,26 @@ class CSVAttendanceRepository(BaseRepository):
         }
 
         if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
-            df = pd.read_csv(self.file_path)
-            # Apply automatic migration
-            df = migrate_csv_schema(df, expected_schema, 'attendance_logs.csv')
-            # Save migrated schema
-            df.to_csv(self.file_path, index=False)
-            return df
+            try:
+                df = pd.read_csv(self.file_path)
+                # Apply automatic migration
+                df = migrate_csv_schema(df, expected_schema, 'attendance_logs.csv')
+                # Save migrated schema
+                df.to_csv(self.file_path, index=False)
+                return df
+            except pd.errors.EmptyDataError:
+                # File exists but is empty or has no columns - recreate with proper schema
+                print(f"Warning: {self.file_path} is empty or has no columns. Creating with default schema.")
+                df = pd.DataFrame(columns=list(expected_schema.keys()))
+                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+                df.to_csv(self.file_path, index=False)
+                return df
 
-        return pd.DataFrame(columns=list(expected_schema.keys()))
+        # File doesn't exist or is completely empty - create with proper schema
+        df = pd.DataFrame(columns=list(expected_schema.keys()))
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        df.to_csv(self.file_path, index=False)
+        return df
 
     def _save_df(self):
         self.df.to_csv(self.file_path, index=False)
