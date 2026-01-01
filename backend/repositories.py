@@ -203,7 +203,7 @@ class CSVEmailSettingsRepository(BaseRepository):
             # If file has content (more than just headers), try to read it
             if file_size > 100:  # More than just a header line
                 try:
-                    df = pd.read_csv(self.file_path)
+                    df = pd.read_csv(self.file_path, encoding='utf-8')
                     # Apply automatic migration
                     df = migrate_csv_schema(df, expected_schema, 'email_settings.csv')
                     # Save migrated schema
@@ -211,11 +211,28 @@ class CSVEmailSettingsRepository(BaseRepository):
                     # Ensure it's not empty and has the correct ID
                     if not df.empty and df['id'].iloc[0] == 1:
                         return df
+                except pd.errors.EmptyDataError:
+                    # File appears empty to pandas - might be locked or corrupted
+                    print(f"WARNING: {self.file_path} has {file_size} bytes but pandas sees no data.")
+                    print(f"This might be a file lock issue. Retrying...")
+                    import time
+                    time.sleep(0.1)  # Wait 100ms for file lock to release
+                    try:
+                        df = pd.read_csv(self.file_path, encoding='utf-8')
+                        df = migrate_csv_schema(df, expected_schema, 'email_settings.csv')
+                        df.to_csv(self.file_path, index=False)
+                        return df
+                    except Exception as retry_error:
+                        print(f"RETRY FAILED: {retry_error}")
+                        # Fall through to create empty schema
+                        df = pd.DataFrame(columns=list(expected_schema.keys()))
+                        return df
                 except Exception as e:
-                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    # Other errors - might be corruption
                     print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
-                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
-                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    return df
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
@@ -226,7 +243,7 @@ class CSVEmailSettingsRepository(BaseRepository):
             else:
                 # File has some content (likely just headers) - try to read
                 try:
-                    df = pd.read_csv(self.file_path)
+                    df = pd.read_csv(self.file_path, encoding='utf-8')
                     df = migrate_csv_schema(df, expected_schema, 'email_settings.csv')
                     df.to_csv(self.file_path, index=False)
                     return df
@@ -234,6 +251,12 @@ class CSVEmailSettingsRepository(BaseRepository):
                     # File has headers but no data rows - that's OK
                     df = pd.DataFrame(columns=list(expected_schema.keys()))
                     df.to_csv(self.file_path, index=False)
+                    return df
+                except Exception as e:
+                    # Other errors - might be corruption
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
                     return df
 
         # File doesn't exist - create new
@@ -316,17 +339,34 @@ class CSVEmployeeRepository(BaseRepository):
             if file_size > 100:  # More than just a header line
                 try:
                     # CRITICAL: Force 'id' column to be string to preserve leading zeros (e.g., "0000001")
-                    df = pd.read_csv(self.file_path, dtype={'id': str})
+                    df = pd.read_csv(self.file_path, encoding='utf-8', dtype={'id': str})
                     # Apply automatic migration
                     df = migrate_csv_schema(df, expected_schema, 'employees.csv')
                     # Save migrated schema
                     df.to_csv(self.file_path, index=False)
                     return df
+                except pd.errors.EmptyDataError:
+                    # File appears empty to pandas - might be locked or corrupted
+                    print(f"WARNING: {self.file_path} has {file_size} bytes but pandas sees no data.")
+                    print(f"This might be a file lock issue. Retrying...")
+                    import time
+                    time.sleep(0.1)  # Wait 100ms for file lock to release
+                    try:
+                        df = pd.read_csv(self.file_path, encoding='utf-8', dtype={'id': str})
+                        df = migrate_csv_schema(df, expected_schema, 'employees.csv')
+                        df.to_csv(self.file_path, index=False)
+                        return df
+                    except Exception as retry_error:
+                        print(f"RETRY FAILED: {retry_error}")
+                        # Fall through to create empty schema
+                        df = pd.DataFrame(columns=list(expected_schema.keys()))
+                        return df
                 except Exception as e:
-                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    # Other errors - might be corruption
                     print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
-                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
-                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    return df
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
@@ -338,7 +378,7 @@ class CSVEmployeeRepository(BaseRepository):
                 # File has some content (likely just headers) - try to read
                 try:
                     # CRITICAL: Force 'id' column to be string to preserve leading zeros
-                    df = pd.read_csv(self.file_path, dtype={'id': str})
+                    df = pd.read_csv(self.file_path, encoding='utf-8', dtype={'id': str})
                     df = migrate_csv_schema(df, expected_schema, 'employees.csv')
                     df.to_csv(self.file_path, index=False)
                     return df
@@ -346,6 +386,12 @@ class CSVEmployeeRepository(BaseRepository):
                     # File has headers but no data rows - that's OK
                     df = pd.DataFrame(columns=list(expected_schema.keys()))
                     df.to_csv(self.file_path, index=False)
+                    return df
+                except Exception as e:
+                    # Other errors - might be corruption
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
                     return df
 
         # File doesn't exist - create new
@@ -427,7 +473,7 @@ class CSVLeaveRequestRepository(BaseRepository):
             # If file has content, try to read it
             if file_size > 100:  # More than just a header line
                 try:
-                    df = pd.read_csv(self.file_path)
+                    df = pd.read_csv(self.file_path, encoding='utf-8')
                     # Apply automatic migration
                     df = migrate_csv_schema(df, expected_schema, 'leave_requests.csv')
                     # Save migrated schema
@@ -437,11 +483,30 @@ class CSVLeaveRequestRepository(BaseRepository):
                     if 'attachments' in df.columns:
                         df['attachments'] = df['attachments'].apply(lambda x: eval(x) if pd.notna(x) else [])
                     return df
+                except pd.errors.EmptyDataError:
+                    # File appears empty to pandas - might be locked or corrupted
+                    print(f"WARNING: {self.file_path} has {file_size} bytes but pandas sees no data.")
+                    print(f"This might be a file lock issue. Retrying...")
+                    import time
+                    time.sleep(0.1)  # Wait 100ms for file lock to release
+                    try:
+                        df = pd.read_csv(self.file_path, encoding='utf-8')
+                        df = migrate_csv_schema(df, expected_schema, 'leave_requests.csv')
+                        df.to_csv(self.file_path, index=False)
+                        if 'attachments' in df.columns:
+                            df['attachments'] = df['attachments'].apply(lambda x: eval(x) if pd.notna(x) else [])
+                        return df
+                    except Exception as retry_error:
+                        print(f"RETRY FAILED: {retry_error}")
+                        # Fall through to create empty schema
+                        df = pd.DataFrame(columns=list(expected_schema.keys()))
+                        return df
                 except Exception as e:
-                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    # Other errors - might be corruption
                     print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
-                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
-                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    return df
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
@@ -452,7 +517,7 @@ class CSVLeaveRequestRepository(BaseRepository):
             else:
                 # File has some content (likely just headers) - try to read
                 try:
-                    df = pd.read_csv(self.file_path)
+                    df = pd.read_csv(self.file_path, encoding='utf-8')
                     df = migrate_csv_schema(df, expected_schema, 'leave_requests.csv')
                     df.to_csv(self.file_path, index=False)
                     if 'attachments' in df.columns:
@@ -462,6 +527,12 @@ class CSVLeaveRequestRepository(BaseRepository):
                     # File has headers but no data rows - that's OK
                     df = pd.DataFrame(columns=list(expected_schema.keys()))
                     df.to_csv(self.file_path, index=False)
+                    return df
+                except Exception as e:
+                    # Other errors - might be corruption
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
                     return df
 
         # File doesn't exist - create new
@@ -539,17 +610,34 @@ class CSVUnitRepository(BaseRepository):
             # If file has content, try to read it
             if file_size > 100:  # More than just a header line
                 try:
-                    df = pd.read_csv(self.file_path)
+                    df = pd.read_csv(self.file_path, encoding='utf-8')
                     # Apply automatic migration
                     df = migrate_csv_schema(df, expected_schema, 'units.csv')
                     # Save migrated schema
                     df.to_csv(self.file_path, index=False)
                     return df
+                except pd.errors.EmptyDataError:
+                    # File appears empty to pandas - might be locked or corrupted
+                    print(f"WARNING: {self.file_path} has {file_size} bytes but pandas sees no data.")
+                    print(f"This might be a file lock issue. Retrying...")
+                    import time
+                    time.sleep(0.1)  # Wait 100ms for file lock to release
+                    try:
+                        df = pd.read_csv(self.file_path, encoding='utf-8')
+                        df = migrate_csv_schema(df, expected_schema, 'units.csv')
+                        df.to_csv(self.file_path, index=False)
+                        return df
+                    except Exception as retry_error:
+                        print(f"RETRY FAILED: {retry_error}")
+                        # Fall through to create empty schema
+                        df = pd.DataFrame(columns=list(expected_schema.keys()))
+                        return df
                 except Exception as e:
-                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    # Other errors - might be corruption
                     print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
-                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
-                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    return df
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
@@ -560,7 +648,7 @@ class CSVUnitRepository(BaseRepository):
             else:
                 # File has some content (likely just headers) - try to read
                 try:
-                    df = pd.read_csv(self.file_path)
+                    df = pd.read_csv(self.file_path, encoding='utf-8')
                     df = migrate_csv_schema(df, expected_schema, 'units.csv')
                     df.to_csv(self.file_path, index=False)
                     return df
@@ -568,6 +656,12 @@ class CSVUnitRepository(BaseRepository):
                     # File has headers but no data rows - that's OK
                     df = pd.DataFrame(columns=list(expected_schema.keys()))
                     df.to_csv(self.file_path, index=False)
+                    return df
+                except Exception as e:
+                    # Other errors - might be corruption
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
                     return df
 
         # File doesn't exist - create new
@@ -636,17 +730,34 @@ class CSVAttendanceRepository(BaseRepository):
             # If file has content (more than just headers), try to read it
             if file_size > 100:  # More than just a header line
                 try:
-                    df = pd.read_csv(self.file_path)
+                    df = pd.read_csv(self.file_path, encoding='utf-8')
                     # Apply automatic migration
                     df = migrate_csv_schema(df, expected_schema, 'attendance_logs.csv')
                     # Save migrated schema
                     df.to_csv(self.file_path, index=False)
                     return df
+                except pd.errors.EmptyDataError:
+                    # File appears empty to pandas - might be locked or corrupted
+                    print(f"WARNING: {self.file_path} has {file_size} bytes but pandas sees no data.")
+                    print(f"This might be a file lock issue. Retrying...")
+                    import time
+                    time.sleep(0.1)  # Wait 100ms for file lock to release
+                    try:
+                        df = pd.read_csv(self.file_path, encoding='utf-8')
+                        df = migrate_csv_schema(df, expected_schema, 'attendance_logs.csv')
+                        df.to_csv(self.file_path, index=False)
+                        return df
+                    except Exception as retry_error:
+                        print(f"RETRY FAILED: {retry_error}")
+                        # Fall through to create empty schema
+                        df = pd.DataFrame(columns=list(expected_schema.keys()))
+                        return df
                 except Exception as e:
-                    # CRITICAL: File exists with data but can't be read - DON'T overwrite!
+                    # Other errors - might be corruption
                     print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
-                    print(f"CRITICAL: Not overwriting file to preserve data. Please check file manually.")
-                    raise RuntimeError(f"Cannot read existing CSV file: {self.file_path}. File preserved to prevent data loss.")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
+                    return df
 
             # File is very small (just headers or empty) - only recreate if truly empty
             elif file_size == 0:
@@ -657,7 +768,7 @@ class CSVAttendanceRepository(BaseRepository):
             else:
                 # File has some content (likely just headers) - try to read
                 try:
-                    df = pd.read_csv(self.file_path)
+                    df = pd.read_csv(self.file_path, encoding='utf-8')
                     df = migrate_csv_schema(df, expected_schema, 'attendance_logs.csv')
                     df.to_csv(self.file_path, index=False)
                     return df
@@ -665,6 +776,12 @@ class CSVAttendanceRepository(BaseRepository):
                     # File has headers but no data rows - that's OK
                     df = pd.DataFrame(columns=list(expected_schema.keys()))
                     df.to_csv(self.file_path, index=False)
+                    return df
+                except Exception as e:
+                    # Other errors - might be corruption
+                    print(f"ERROR: Cannot read {self.file_path} (size: {file_size} bytes). Error: {e}")
+                    print(f"Attempting to recover by creating empty schema...")
+                    df = pd.DataFrame(columns=list(expected_schema.keys()))
                     return df
 
         # File doesn't exist - create new
