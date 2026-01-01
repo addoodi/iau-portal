@@ -28,7 +28,8 @@ export default function DashboardTimeline({ teamMembers, requests }) {
     if (selectedUnit === 'all') {
       return teamMembers;
     }
-    return teamMembers.filter(member => member.unit_id === selectedUnit);
+    // Convert both to strings for comparison (dropdown values are always strings)
+    return teamMembers.filter(member => String(member.unit_id) === String(selectedUnit));
   }, [teamMembers, selectedUnit]);
 
   // Navigate to previous/next month
