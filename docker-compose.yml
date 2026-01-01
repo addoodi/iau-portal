@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.backend
       args:
         - CACHEBUST=${CACHEBUST:-1}
-      no_cache: false
+      no_cache: true
     pull_policy: build
     container_name: iau-portal-backend
     restart: unless-stopped
@@ -37,7 +37,7 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         - CACHEBUST=${CACHEBUST:-1}
-      no_cache: false
+      no_cache: true
     pull_policy: build
     container_name: iau-portal-frontend
     restart: unless-stopped
