@@ -284,7 +284,31 @@ export const downloadRequestForm = async (requestId) => {
 
 
 
-    
+
+
+export const downloadAttachment = async (requestId, filename) => {
+    const response = await fetch(`${API_BASE_URL}/requests/${requestId}/attachments/${filename}`, {
+        headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Network error or invalid JSON response' }));
+        throw new Error(errorData.detail || 'An unknown error occurred');
+    }
+
+    // Handle the file download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    return { success: true, filename };
+};
 
 
 

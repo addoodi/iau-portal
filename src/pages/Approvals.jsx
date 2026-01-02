@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle, AlertTriangle, Paperclip } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
-import { API_BASE_URL } from '../api';
+import { downloadAttachment } from '../api';
 import DashboardTimeline from '../components/DashboardTimeline';
 import { getAllSubordinates } from '../utils/hierarchy';
 
@@ -72,13 +72,17 @@ export default function Approvals() {
     }
   };
 
-  const getAttachmentUrl = (req) => {
+  const handleAttachmentDownload = async (req) => {
       if (req.attachments && req.attachments.length > 0) {
-          const filePath = req.attachments[0]; 
-          const filename = filePath.split(/[\\/]/).pop();
-          return `${API_BASE_URL}/requests/${req.id}/attachments/${filename}`;
+          try {
+              const filePath = req.attachments[0];
+              const filename = filePath.split(/[\\/]/).pop(); // Handle both slash types
+              await downloadAttachment(req.id, filename);
+          } catch (e) {
+              console.error(e);
+              alert("Failed to download attachment");
+          }
       }
-      return null;
   };
 
   const teamMembers = employees.filter(e => teamEmployeeIds.includes(e.id));
@@ -132,9 +136,13 @@ export default function Approvals() {
                         <span className="flex items-center gap-2">
                             {req.duration} {t.days || 'Days'}: {t[req.vacation_type] || req.vacation_type} ({formatDate(req.start_date)} {t.to || 'to'} {formatDate(req.end_date)})
                             {req.attachments && req.attachments.length > 0 && (
-                                <a href={getAttachmentUrl(req)} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700" title={t.viewAttachment}>
+                                <button
+                                    onClick={() => handleAttachmentDownload(req)}
+                                    className="text-blue-500 hover:text-blue-700"
+                                    title={t.viewAttachment}
+                                >
                                     <Paperclip size={14} />
-                                </a>
+                                </button>
                             )}
                         </span>
                      </div>
@@ -152,6 +160,19 @@ export default function Approvals() {
                                     return <li key={c.id}>{cName} ({formatDate(c.start_date)} - {formatDate(c.end_date)})</li>
                                 })}
                             </ul>
+                        </div>
+                     )}
+
+                     {req.vacation_type?.toLowerCase() === 'annual' && requester && req.duration > requester.vacation_balance && (
+                        <div className="mt-2 text-xs text-red-800 bg-red-50 p-3 rounded border border-red-200">
+                            <div className="flex items-center gap-1 font-bold mb-1">
+                                <AlertCircle size={14} className="text-red-600"/>
+                                {t.negativeBalanceWarning || "Negative Balance Warning"}
+                            </div>
+                            <p className="text-red-700">
+                                {t.exceedsBalance || "This request exceeds employee's available balance"} ({requester.vacation_balance} {t.days || "days"}).
+                                {t.willResultIn || " Approving will result in"} <strong className="text-red-900">{requester.vacation_balance - req.duration} {t.days || "days"}</strong>.
+                            </p>
                         </div>
                      )}
                    </div>

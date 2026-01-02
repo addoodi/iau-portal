@@ -21,7 +21,7 @@ export default function RequestModal({ onClose }) {
   };
 
   const days = calculateDays();
-  const isValid = days > 0 && (type !== 'annual' || days <= user.vacation_balance);
+  const isValid = days > 0; // Allow requests even if they exceed balance
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,9 +80,15 @@ export default function RequestModal({ onClose }) {
            </div>
 
            {days > 0 && (
-             <div className={`text-sm font-medium p-2 border ${days > user.vacation_balance && type === 'annual' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
+             <div className={`text-sm font-medium p-2 border ${days > user.vacation_balance && type === 'annual' ? 'bg-orange-50 text-orange-700 border-orange-300' : 'bg-green-50 text-green-700 border-green-200'}`}>
                Total Duration: <strong>{days} days</strong>
-               {days > user.vacation_balance && type === 'annual' && <span className="block text-xs mt-1">Exceeds available balance ({user.vacation_balance})</span>}
+               {days > user.vacation_balance && type === 'annual' && (
+                 <span className="block text-xs mt-1">
+                   ⚠️ Exceeds available balance ({user.vacation_balance} days).
+                   This will result in negative balance ({user.vacation_balance - days} days).
+                   Manager approval required.
+                 </span>
+               )}
              </div>
            )}
 

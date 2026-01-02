@@ -48,6 +48,13 @@ services:
       - PYTHONUNBUFFERED=1
       # PostgreSQL connection
       - DATABASE_URL=postgresql://${POSTGRES_USER:-iau_admin}:${POSTGRES_PASSWORD:-iau_secure_password_2024}@postgres:5432/${POSTGRES_DB:-iau_portal}
+      # SMTP Email Configuration
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_SENDER_EMAIL=${SMTP_SENDER_EMAIL:-noreply@iau-portal.com}
+      - SMTP_ENABLED=${SMTP_ENABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy

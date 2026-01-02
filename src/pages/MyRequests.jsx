@@ -1,7 +1,7 @@
 import React from 'react';
 import { Download, XCircle, Paperclip } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
-import { downloadRequestForm, API_BASE_URL } from '../api';
+import { downloadRequestForm, downloadAttachment } from '../api';
 
 export default function MyRequests() {
   const { user, requests, t, updateRequestStatus, formatDate, isRTL } = usePortal();
@@ -22,14 +22,17 @@ export default function MyRequests() {
       }
   };
 
-  const getAttachmentUrl = (req) => {
+  const handleAttachmentDownload = async (req) => {
       if (req.attachments && req.attachments.length > 0) {
-          // Just taking the first one for now as per simple requirement
-          const filePath = req.attachments[0]; 
-          const filename = filePath.split(/[\\/]/).pop(); // Handle both slash types
-          return `${API_BASE_URL}/requests/${req.id}/attachments/${filename}`;
+          try {
+              const filePath = req.attachments[0];
+              const filename = filePath.split(/[\\/]/).pop(); // Handle both slash types
+              await downloadAttachment(req.id, filename);
+          } catch (e) {
+              console.error(e);
+              alert("Failed to download attachment");
+          }
       }
-      return null;
   };
 
   return (
@@ -54,9 +57,13 @@ export default function MyRequests() {
                     <div className="text-sm font-bold text-primary capitalize flex items-center gap-2">
                         {t[req.vacation_type] || req.vacation_type}
                         {req.attachments && req.attachments.length > 0 && (
-                            <a href={getAttachmentUrl(req)} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700" title={t.viewAttachment}>
+                            <button
+                                onClick={() => handleAttachmentDownload(req)}
+                                className="text-blue-500 hover:text-blue-700"
+                                title={t.viewAttachment}
+                            >
                                 <Paperclip size={14} />
-                            </a>
+                            </button>
                         )}
                     </div>
                   </td>

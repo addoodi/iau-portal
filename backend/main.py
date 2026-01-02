@@ -391,6 +391,7 @@ def download_vacation_form(request_id: int,
         'using_balance': str(leave_request.balance_used),
         'approval_date': to_hijri_str(leave_request.approval_date),
         'approval_x': "x" if leave_request.status == 'Approved' else "",
+        'rejection_x': "X" if leave_request.status == 'Rejected' else "",
         'refusal_reason': leave_request.rejection_reason if leave_request.status == 'Rejected' else "",
         'employee_signature_path': employee.signature_path,
         'manager_signature_path': manager.signature_path if manager else None,
@@ -511,12 +512,25 @@ def download_dashboard_report(
 
             if is_team_member:
                 # Calculate period-specific stats for this member
+                # For 'full_year' filter, use each employee's own contract period
+                if filter_request.filter_type == 'full_year':
+                    emp_start_date = datetime.strptime(emp.start_date, "%Y-%m-%d").date()
+                    member_period_start, member_period_end = calculate_date_range(
+                        'full_year',
+                        None,
+                        None,
+                        emp_start_date
+                    )
+                else:
+                    # For other filters, use the same period as the manager
+                    member_period_start, member_period_end = period_start, period_end
+
                 member_requests_in_period = []
                 for r in all_requests:
                     if r.employee_id == emp.id:
                         req_start = datetime.strptime(r.start_date, "%Y-%m-%d").date()
                         req_end = datetime.strptime(r.end_date, "%Y-%m-%d").date()
-                        if req_start <= period_end and req_end >= period_start:
+                        if req_start <= member_period_end and req_end >= member_period_start:
                             member_requests_in_period.append(r)
 
                 approved_in_period = [r for r in member_requests_in_period if r.status == 'Approved']

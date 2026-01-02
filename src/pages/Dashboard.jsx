@@ -50,9 +50,9 @@ export default function Dashboard() {
   // Contract Warning
   const showContractWarning = user.days_remaining_in_contract !== undefined && user.days_remaining_in_contract <= 40;
 
-  // Filter team members (Admin sees all except themselves, Manager sees direct and indirect reports)
+  // Filter team members (Admin/Dean see all except themselves, Manager sees direct and indirect reports)
   const teamMembers = employees.filter(u => {
-      if (user.role?.toLowerCase() === 'admin') return u.id !== user.id;
+      if (user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'dean') return u.id !== user.id;
       if (user.role?.toLowerCase() === 'manager') {
           // Get all subordinates (direct and indirect) using hierarchy utility
           const subordinateIds = getAllSubordinates(user.id, employees, true);
@@ -61,9 +61,9 @@ export default function Dashboard() {
       return false;
   });
 
-  // Count pending requests for managers/admins
+  // Count pending requests for managers/admins/deans
   const pendingRequests = requests.filter(r => {
-    if (user.role?.toLowerCase() === 'admin') return r.status === 'Pending';
+    if (user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'dean') return r.status === 'Pending';
     if (user.role?.toLowerCase() === 'manager') {
       const employee = employees.find(e => e.id === r.employee_id);
       if (!employee) return false;
@@ -307,8 +307,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Timeline Calendar for Managers/Admins */}
-      {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin') && teamMembers.length > 0 && (
+      {/* Timeline Calendar for Managers/Admins/Deans */}
+      {(user.role?.toLowerCase() === 'manager' || user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'dean') && teamMembers.length > 0 && (
         <DashboardTimeline teamMembers={teamMembers} requests={requests} />
       )}
     </div>
