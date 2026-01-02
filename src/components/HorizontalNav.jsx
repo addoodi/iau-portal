@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, CheckCircle, Users, Settings, Menu, X, Building2 } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, FileText, CheckCircle, Users, Settings, Menu, X, Building2, UserCircle } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 import StatusPill from './StatusPill';
 
 const HorizontalNav = ({ user, onLogout }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { lang, t, isRTL, attendance } = usePortal();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -61,8 +62,11 @@ const HorizontalNav = ({ user, onLogout }) => {
               );
             })}
 
-            {/* User Info with Status Pill */}
-            <div className={`flex items-center gap-3 px-6 py-4 text-white ${isRTL ? 'flex-row-reverse mr-auto' : 'ml-auto'}`}>
+            {/* User Info with Status Pill - Clickable Profile */}
+            <button
+              onClick={() => navigate('/profile')}
+              className={`flex items-center gap-3 px-6 py-4 text-white hover:bg-accent transition-colors ${isRTL ? 'flex-row-reverse mr-auto' : 'ml-auto'}`}
+            >
               {/* Status Pill - shown before name in English, after in Arabic */}
               {!isRTL && <StatusPill attendance={attendance} />}
 
@@ -76,7 +80,10 @@ const HorizontalNav = ({ user, onLogout }) => {
               </div>
 
               {isRTL && <StatusPill attendance={attendance} />}
-            </div>
+
+              {/* Profile Icon */}
+              <UserCircle size={20} className="opacity-75" />
+            </button>
           </div>
 
         {/* Mobile Navigation */}
@@ -113,6 +120,18 @@ const HorizontalNav = ({ user, onLogout }) => {
                   </NavLink>
                 );
               })}
+
+              {/* Profile Link in Mobile Menu */}
+              <NavLink
+                to="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 transition-colors text-white ${
+                  location.pathname === '/profile' ? 'bg-accent' : 'hover:bg-accent'
+                } ${isRTL ? 'flex-row-reverse' : ''}`}
+              >
+                <UserCircle size={20} />
+                <span className="font-medium text-sm">{t.profile || (lang === 'ar' ? 'الملف الشخصي' : 'Profile')}</span>
+              </NavLink>
             </div>
           )}
         </div>

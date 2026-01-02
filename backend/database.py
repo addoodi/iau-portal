@@ -164,6 +164,26 @@ def init_db():
     """
     print("Creating database tables...")
     Base.metadata.create_all(bind=engine)
+
+    # Create default unit for admin if it doesn't exist
+    db = SessionLocal()
+    try:
+        existing_unit = db.query(UnitModel).filter(UnitModel.id == 1).first()
+        if not existing_unit:
+            default_unit = UnitModel(
+                name_en="Administration",
+                name_ar="الإدارة"
+            )
+            db.add(default_unit)
+            db.commit()
+            db.refresh(default_unit)
+            print(f"[SEED] Created default Administration unit (ID: {default_unit.id})")
+    except Exception as e:
+        print(f"[SEED] Default unit already exists or error: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
     print("[SUCCESS] Database tables created successfully!")
 
 

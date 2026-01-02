@@ -152,6 +152,9 @@ class DBEmployeeRepository:
         return None
 
     def add(self, employee: Employee) -> Employee:
+        # Convert empty string to None for optional foreign keys
+        manager_id = employee.manager_id if employee.manager_id and employee.manager_id.strip() else None
+
         db_emp = EmployeeModel(
             id=employee.id,
             user_id=employee.user_id,
@@ -162,7 +165,7 @@ class DBEmployeeRepository:
             position_ar=employee.position_ar,
             position_en=employee.position_en,
             unit_id=employee.unit_id,
-            manager_id=employee.manager_id,
+            manager_id=manager_id,
             start_date=employee.start_date,
             monthly_vacation_earned=employee.monthly_vacation_earned,
             signature_path=employee.signature_path,
@@ -173,9 +176,15 @@ class DBEmployeeRepository:
         self.db.refresh(db_emp)
         return employee
 
-    def update(self, employee_id: str, updated_employee: Employee) -> Employee:
+    def update(self, updated_employee: Employee) -> Employee:
+        # Extract employee_id from the employee object (matching service expectations)
+        employee_id = updated_employee.id
+
         db_emp = self.db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
         if db_emp:
+            # Convert empty string to None for optional foreign keys
+            manager_id = updated_employee.manager_id if updated_employee.manager_id and updated_employee.manager_id.strip() else None
+
             db_emp.first_name_ar = updated_employee.first_name_ar
             db_emp.last_name_ar = updated_employee.last_name_ar
             db_emp.first_name_en = updated_employee.first_name_en
@@ -183,7 +192,7 @@ class DBEmployeeRepository:
             db_emp.position_ar = updated_employee.position_ar
             db_emp.position_en = updated_employee.position_en
             db_emp.unit_id = updated_employee.unit_id
-            db_emp.manager_id = updated_employee.manager_id
+            db_emp.manager_id = manager_id
             db_emp.start_date = updated_employee.start_date
             db_emp.monthly_vacation_earned = updated_employee.monthly_vacation_earned
             db_emp.signature_path = updated_employee.signature_path
@@ -323,7 +332,10 @@ class DBLeaveRequestRepository:
         leave_request.id = db_req.id  # Get auto-generated ID
         return leave_request
 
-    def update(self, request_id: int, updated_request: LeaveRequest) -> LeaveRequest:
+    def update(self, updated_request: LeaveRequest) -> LeaveRequest:
+        # Get request_id from the updated_request object
+        request_id = updated_request.id
+
         db_req = self.db.query(LeaveRequestModel).filter(LeaveRequestModel.id == request_id).first()
         if db_req:
             db_req.vacation_type = updated_request.vacation_type
