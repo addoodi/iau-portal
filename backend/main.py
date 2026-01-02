@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from .models import User, UserCreate, LeaveRequest, Employee, EmployeeWithBalance, EmployeeCreate, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UserPasswordUpdate, UnitCreate, UnitUpdate, AttendanceLog, SignatureUpload, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate, DashboardReportRequest, TeamMemberStats
-from .repositories import CSVUserRepository, CSVEmployeeRepository, CSVLeaveRequestRepository
+from .database import init_db
 from .services import UserService, EmployeeService, LeaveRequestService, UnitService, AttendanceService, EmailSettingsService, save_attachment
 from .document_generator import create_vacation_form, create_dashboard_report
 from .auth import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -22,6 +22,13 @@ from .dependencies import get_user_service, get_employee_service, get_leave_requ
 from .calculation import calculate_date_range
 
 app = FastAPI(title="IAU Portal API", version="0.1.0")
+
+# Initialize database tables on startup
+@app.on_event("startup")
+def on_startup():
+    print("[STARTUP] Initializing database tables...")
+    init_db()
+    print("[STARTUP] Database ready!")
 
 # CORS Middleware
 # Allow all origins for maximum compatibility in development

@@ -1,0 +1,182 @@
+"""
+SQLAlchemy Database Models and Configuration
+Maps to Pydantic models in models.py
+"""
+import os
+from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean, DateTime, Text, ForeignKey, JSON
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
+from datetime import datetime
+
+# Database URL from environment variable
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://iau_admin:iau_secure_password_2024@localhost:5432/iau_portal"
+)
+
+# Create SQLAlchemy engine
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,  # Set to False to reduce console output
+    pool_pre_ping=True,  # Verify connections before using them
+    pool_size=10,
+    max_overflow=20
+)
+
+# Create SessionLocal class
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create Base class for models
+Base = declarative_base()
+
+# ==============================================
+# Database Models (SQLAlchemy ORM)
+# ==============================================
+
+class UserModel(Base):
+    """User authentication and authorization"""
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(String(50), nullable=False)  # 'admin', 'manager', 'employee', 'dean'
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    # Relationship to employee
+    employee = relationship("EmployeeModel", back_populates="user", uselist=False)
+
+
+class EmployeeModel(Base):
+    """Employee information and HR data"""
+    __tablename__ = "employees"
+
+    id = Column(String(50), primary_key=True)  # "IAU-001" or "0000001"
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    first_name_ar = Column(String(100), nullable=False)
+    last_name_ar = Column(String(100), nullable=False)
+    first_name_en = Column(String(100), nullable=False)
+    last_name_en = Column(String(100), nullable=False)
+    position_ar = Column(String(200), nullable=False)
+    position_en = Column(String(200), nullable=False)
+    unit_id = Column(Integer, ForeignKey("units.id"), nullable=False, index=True)
+    manager_id = Column(String(50), ForeignKey("employees.id"), nullable=True, index=True)
+    start_date = Column(String(10), nullable=False)  # YYYY-MM-DD
+    monthly_vacation_earned = Column(Float, default=2.5, nullable=False)
+    signature_path = Column(String(500), nullable=True)
+    contract_auto_renewed = Column(Boolean, default=False, nullable=False)
+
+    # Relationships
+    user = relationship("UserModel", back_populates="employee")
+    unit = relationship("UnitModel", back_populates="employees")
+    manager = relationship("EmployeeModel", remote_side=[id], backref="subordinates")
+    leave_requests = relationship("LeaveRequestModel", back_populates="employee")
+    attendance_logs = relationship("AttendanceLogModel", back_populates="employee")
+
+
+class UnitModel(Base):
+    """Organizational units/departments"""
+    __tablename__ = "units"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name_en = Column(String(200), nullable=False)
+    name_ar = Column(String(200), nullable=False)
+
+    # Relationships
+    employees = relationship("EmployeeModel", back_populates="unit")
+
+
+class LeaveRequestModel(Base):
+    """Vacation/leave requests"""
+    __tablename__ = "leave_requests"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    employee_id = Column(String(50), ForeignKey("employees.id"), nullable=False, index=True)
+    vacation_type = Column(String(50), nullable=False)  # 'Annual', 'Sick', etc.
+    start_date = Column(String(10), nullable=False)  # YYYY-MM-DD
+    end_date = Column(String(10), nullable=False)  # YYYY-MM-DD
+    duration = Column(Integer, nullable=False)
+    status = Column(String(20), default='Pending', nullable=False)  # 'Pending', 'Approved', 'Rejected'
+    rejection_reason = Column(Text, nullable=True)
+    approval_date = Column(String(10), nullable=True)  # YYYY-MM-DD
+    balance_used = Column(Integer, nullable=False)
+    attachments = Column(JSON, default=list, nullable=False)  # List of file paths
+
+    # Relationships
+    employee = relationship("EmployeeModel", back_populates="leave_requests")
+
+
+class AttendanceLogModel(Base):
+    """Employee attendance tracking"""
+    __tablename__ = "attendance_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    employee_id = Column(String(50), ForeignKey("employees.id"), nullable=False, index=True)
+    date = Column(String(10), nullable=False, index=True)  # YYYY-MM-DD
+    check_in = Column(DateTime, nullable=False)
+    check_out = Column(DateTime, nullable=True)
+    status = Column(String(20), default='Present', nullable=False)  # 'Present', 'Absent', 'Late'
+
+    # Relationships
+    employee = relationship("EmployeeModel", back_populates="attendance_logs")
+
+
+class EmailSettingsModel(Base):
+    """SMTP email configuration (singleton)"""
+    __tablename__ = "email_settings"
+
+    id = Column(Integer, primary_key=True, default=1)  # Only one record
+    smtp_host = Column(String(255), nullable=False)
+    smtp_port = Column(Integer, nullable=False)
+    smtp_username = Column(String(255), nullable=False)
+    smtp_password_hash = Column(String(255), nullable=False)
+    sender_email = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=False, nullable=False)
+
+
+# ==============================================
+# Database Helper Functions
+# ==============================================
+
+def get_db():
+    """
+    Dependency for FastAPI endpoints
+    Creates a database session and closes it after use
+
+    Usage in FastAPI:
+        @app.get("/users")
+        def get_users(db: Session = Depends(get_db)):
+            users = db.query(UserModel).all()
+            return users
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def init_db():
+    """
+    Initialize database tables
+    Run this once to create all tables
+    """
+    print("Creating database tables...")
+    Base.metadata.create_all(bind=engine)
+    print("[SUCCESS] Database tables created successfully!")
+
+
+def drop_all_tables():
+    """
+    WARNING: Drop all tables (use carefully!)
+    """
+    print("WARNING: Dropping all database tables...")
+    Base.metadata.drop_all(bind=engine)
+    print("[SUCCESS] All tables dropped")
+
+
+if __name__ == "__main__":
+    # If run directly, create all tables
+    print(f"Database URL: {DATABASE_URL}")
+    init_db()
