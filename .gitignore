@@ -216,6 +216,56 @@ docker-compose.override.yml
 *.tar.gz
 *.rar
 
+# Examples folder (reference files only, not used in code)
+Examples/
+
+# Temporary test files
+test.bat
+test.csv
+test_db_connection.py
+migrate_csv_to_postgres.py
+
+# Debug and temporary scripts
+debug_backend*.py
+temp_create_admin.py
+template_placeholders.txt
+kill_backend.ps1
+run_scheduler.py
+
+# Local development batch files (Windows-specific)
+run_backend.bat
+run_backend_local.bat
+run_frontend.bat
+run_frontend_debug.bat
+start_backend.bat
+start_frontend.bat
+restart_backend_clean.bat
+
+# Alternative docker-compose files (keep only main one)
+docker-compose.fresh.yml
+docker-compose.local.yml
+docker-compose.manual.yml
+docker-compose.test.yml
+
+# Alternative Dockerfiles (keep only main ones)
+Dockerfile.frontend.debug
+Dockerfile.frontend.test
+
+# Deployment documentation (outdated, keep only CLAUDE.md and README.md)
+DEPLOYMENT.md
+DOCKER-README.md
+DOCKER-TEST-README.md
+EMAIL_SETUP.md
+NPM-SETUP.md
+PORTAINER.md
+PORTAINER_DEPLOYMENT.md
+PORTAINER-DEPLOY.md
+VITE_MIGRATION_PLAN.md
+render.yaml
+
+# Old chat history (already covered by code assist history/)
+Gemin-chat-history.md
+
 # ============================================
 # CLAUDE CODE ASSISTANT
 # ============================================
