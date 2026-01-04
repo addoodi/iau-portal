@@ -56,7 +56,7 @@ A comprehensive web-based employee management system for the Institute of Innova
 ### Infrastructure
 - **Docker & Docker Compose** - Containerized deployment
 - **Nginx** - Reverse proxy and static file serving
-- **CSV Storage** - Lightweight data persistence
+- **PostgreSQL 16 Alpine** - Production database with ACID guarantees
 
 ## 📋 Prerequisites
 
@@ -154,6 +154,12 @@ FRONTEND_PORT=3000
 BACKEND_HOST=0.0.0.0
 BACKEND_PORT=8000
 
+# Database Configuration (PostgreSQL)
+DATABASE_URL=postgresql://iau_admin:iau_secure_password_2024@localhost:5432/iau_portal
+POSTGRES_USER=iau_admin
+POSTGRES_PASSWORD=iau_secure_password_2024
+POSTGRES_DB=iau_portal
+
 # Email Configuration (optional - can be set via UI)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -192,19 +198,18 @@ nohup python run_scheduler.py > scheduler.log 2>&1 &
 ```
 iau-portal/
 ├── backend/
-│   ├── data/              # CSV data storage
-│   │   ├── employees.csv
-│   │   ├── users.csv
-│   │   ├── leave_requests.csv
-│   │   ├── units.csv
+│   ├── data/              # User uploads & attachments
+│   │   ├── signatures/    # Employee signature images
+│   │   ├── attachments/   # Leave request attachments
 │   │   └── sent_notifications.json
 │   ├── templates/         # Document templates
+│   ├── database.py        # SQLAlchemy models & DB setup
+│   ├── db_repositories.py # PostgreSQL data access layer
 │   ├── email_templates.py # Email HTML templates
 │   ├── notification_scheduler.py
 │   ├── main.py           # FastAPI application
 │   ├── models.py         # Pydantic models
 │   ├── services.py       # Business logic
-│   ├── repositories.py   # Data access layer
 │   └── auth.py           # Authentication
 ├── src/
 │   ├── components/       # React components
@@ -253,17 +258,60 @@ iau-portal/
 
 ## 📊 Data Persistence
 
-All data is stored in CSV files in the `/backend/data` directory:
-- User accounts and authentication
-- Employee profiles and contracts
-- Leave requests and history
-- Organizational units
-- Email settings
+The application uses **PostgreSQL 16 Alpine** for production-grade data storage with ACID transaction guarantees.
 
-**Backup Recommendation**: Regularly backup the data directory:
+### Database Schema
+- **users** - User accounts and authentication (UUID primary keys)
+- **employees** - Employee profiles and contracts
+- **units** - Organizational units/departments
+- **leave_requests** - Vacation request records with JSON attachments
+- **attendance_logs** - Daily check-in/check-out records
+- **email_settings** - SMTP configuration (singleton table)
+
+### Database Backup
+
+**Automated PostgreSQL Backup:**
 ```bash
-tar -czf iau-portal-backup-$(date +%Y%m%d).tar.gz /home/addoodi/appdata/iau-portal/data
+# Backup database to SQL file
+docker exec iau-portal-postgres pg_dump -U iau_admin iau_portal > backup-$(date +%Y%m%d).sql
+
+# Backup with gzip compression
+docker exec iau-portal-postgres pg_dump -U iau_admin iau_portal | gzip > backup-$(date +%Y%m%d).sql.gz
 ```
+
+**Database Restore:**
+```bash
+# Restore from SQL file
+docker exec -i iau-portal-postgres psql -U iau_admin iau_portal < backup-20260104.sql
+
+# Restore from compressed file
+gunzip -c backup-20260104.sql.gz | docker exec -i iau-portal-postgres psql -U iau_admin iau_portal
+```
+
+**Full Data Backup (Database + Attachments):**
+```bash
+# Backup PostgreSQL database + user uploads (signatures/attachments)
+tar -czf iau-portal-full-backup-$(date +%Y%m%d).tar.gz \
+  /home/addoodi/appdata/iau-portal/data \
+  <(docker exec iau-portal-postgres pg_dump -U iau_admin iau_portal)
+```
+
+### Database Access
+
+**Connect to PostgreSQL CLI:**
+```bash
+docker exec -it iau-portal-postgres psql -U iau_admin -d iau_portal
+```
+
+**View Database Schema:**
+```bash
+# Inside psql
+\dt                    # List all tables
+\d users              # Describe users table
+\d+ employees         # Detailed employee table info
+```
+
+For detailed schema documentation, see [Gemini-database.md](Gemini-database.md).
 
 ## 🐛 Troubleshooting
 
@@ -283,6 +331,21 @@ FRONTEND_PORT=3001
 ```bash
 # Ensure correct ownership
 sudo chown -R 1000:1000 /home/addoodi/appdata/iau-portal/
+```
+
+### Database Connection Issues
+```bash
+# Check if PostgreSQL container is running
+docker ps | grep iau-portal-postgres
+
+# View PostgreSQL logs
+docker logs iau-portal-postgres
+
+# Restart PostgreSQL container
+docker-compose restart postgres
+
+# Test database connection from backend
+docker exec -it iau-portal-backend python -c "from backend.database import engine; print(engine.connect())"
 ```
 
 ### Reset Admin Password

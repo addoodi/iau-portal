@@ -39,6 +39,7 @@ The following are the exact placeholders provided by the backend. Use these in t
 | `{{ using_balance }}` | The amount of balance used for this request. Assumes it equals `duration`. | ✅ Implemented |
 | `{{ approval_date }}` | The approval date in Hijri format. Empty if not approved. | ✅ Implemented |
 | `{{ approval_x }}` | An "x" if the request status is "Approved". Empty otherwise. | ✅ Implemented |
+| `{{ rejection_x }}` | An "x" if the request status is "Rejected". Empty otherwise. | ✅ Implemented |
 | `{{ refusal_reason }}`| The reason for rejection. Empty if not rejected. | ✅ Implemented |
 
 ---
