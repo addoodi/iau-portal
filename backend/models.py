@@ -175,3 +175,29 @@ class TeamMemberStats(BaseModel):
     vacation_balance: float
     current_status: str  # 'Present', 'On Leave'
     leaves_by_type: dict  # {'Annual': 5, 'Sick': 2, 'Emergency': 1}
+
+# Audit Logging Models
+class AuditLog(BaseModel):
+    """
+    Audit log entry for tracking critical user actions.
+
+    Records who did what, when, and provides accountability trail
+    for compliance and security purposes.
+    """
+    id: UUID = Field(default_factory=uuid4)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    user_id: Optional[UUID] = None  # None for system actions
+    user_email: Optional[str] = None
+    action: str  # e.g., "leave_request_created", "leave_request_approved", "employee_updated"
+    entity_type: str  # e.g., "leave_request", "employee", "user"
+    entity_id: str  # ID of the affected entity
+    details: Optional[str] = None  # JSON string with additional context
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+
+class AuditLogCreate(BaseModel):
+    """Request model for creating audit log entries (rarely used directly)."""
+    action: str
+    entity_type: str
+    entity_id: str
+    details: Optional[str] = None

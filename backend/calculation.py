@@ -1,7 +1,44 @@
 from datetime import datetime, date, timedelta
 from dateutil.relativedelta import relativedelta
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 from .models import Employee, LeaveRequest
+
+
+def months_between(start: date, end: date) -> int:
+    """
+    Calculate the number of full months between two dates.
+    Follows the 15th day rule: working past the 15th counts as a full month.
+
+    Examples:
+        - Jan 1 to Jan 31 = 1 month (full month)
+        - Jan 1 to Jan 16 = 1 month (passed 15th)
+        - Jan 1 to Jan 14 = 0 months (didn't reach 15th)
+        - Jan 1, 2025 to Jan 1, 2026 = 12 months
+        - Jan 1 to Dec 31 = 12 months
+    """
+    if start > end:
+        return 0
+
+    # Calculate month difference
+    months_diff = (end.year - start.year) * 12 + (end.month - start.month)
+
+    # Same month: check if we passed 15th
+    if months_diff == 0:
+        return 1 if end.day > 15 else 0
+
+    # Different months: start with the number of complete months between
+    # (not including start and end months)
+    count = max(0, months_diff - 1)
+
+    # Add start month if we started on or before the 15th
+    if start.day <= 15:
+        count += 1
+
+    # Add end month if we ended after the 15th
+    if end.day > 15:
+        count += 1
+
+    return count
 
 def get_current_contract_period(start_date: date, today: date) -> Tuple[date, date]:
     """
@@ -154,3 +191,91 @@ def calculate_date_range(filter_type: str, start_date_str: Optional[str] = None,
     else:
         # Default to last 30 days
         return today - timedelta(days=30), today
+
+
+# ============================================
+# Simplified Test API (for pytest tests)
+# ============================================
+
+def calculate_vacation_balance_simple(
+    start_date: str,
+    monthly_rate: float,
+    approved_days: int,
+    contract_end_date: Optional[str] = None,
+    contract_auto_renewed: bool = False
+) -> float:
+    """
+    Simplified API for calculating vacation balance (used by tests).
+
+    Args:
+        start_date: Employee start date (YYYY-MM-DD)
+        monthly_rate: Monthly vacation accrual rate
+        approved_days: Total approved vacation days
+        contract_end_date: Contract end date (YYYY-MM-DD) or None
+        contract_auto_renewed: Whether contract auto-renews
+
+    Returns:
+        Current vacation balance
+    """
+    emp_start = datetime.strptime(start_date, "%Y-%m-%d").date()
+    today = date.today()
+
+    if emp_start > today:
+        return 0.0
+
+    # Determine calculation end date
+    calc_end_date = today
+    if contract_end_date:
+        contract_end = datetime.strptime(contract_end_date, "%Y-%m-%d").date()
+        # Use the earlier of today or contract end
+        calc_end_date = min(today, contract_end)
+
+    # Calculate months worked
+    months_worked = months_between(emp_start, calc_end_date)
+
+    # Calculate earned balance
+    earned = months_worked * monthly_rate
+
+    # Deduct approved days
+    balance = earned - approved_days
+
+    return round(balance, 2)
+
+
+def get_current_contract_period_simple(
+    start_date: str,
+    contract_end_date: Optional[str] = None,
+    contract_auto_renewed: bool = False
+) -> Tuple[str, int]:
+    """
+    Simplified API for getting contract period info (used by tests).
+
+    Args:
+        start_date: Employee start date (YYYY-MM-DD)
+        contract_end_date: Contract end date (YYYY-MM-DD) or None
+        contract_auto_renewed: Whether contract auto-renews
+
+    Returns:
+        Tuple of (end_date_str, days_remaining)
+    """
+    emp_start = datetime.strptime(start_date, "%Y-%m-%d").date()
+    today = date.today()
+
+    # Default contract end (1 year from start)
+    if contract_end_date:
+        end_date = datetime.strptime(contract_end_date, "%Y-%m-%d").date()
+
+        # If auto-renewed and past end date, extend by 1 year
+        if contract_auto_renewed and today > end_date:
+            end_date = end_date + relativedelta(years=1)
+    else:
+        # Default to 1 year from start
+        end_date = emp_start + relativedelta(years=1)
+
+    # Calculate days remaining
+    if end_date > today:
+        days_remaining = (end_date - today).days
+    else:
+        days_remaining = 0
+
+    return end_date.isoformat(), days_remaining

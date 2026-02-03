@@ -68,8 +68,8 @@ class DBUserRepository:
         self.db.refresh(db_user)
         return user
 
-    def update(self, user_id: UUID, updated_user: User) -> User:
-        db_user = self.db.query(UserModel).filter(UserModel.id == user_id).first()
+    def update(self, updated_user: User) -> User:
+        db_user = self.db.query(UserModel).filter(UserModel.id == updated_user.id).first()
         if db_user:
             db_user.email = updated_user.email
             db_user.password_hash = updated_user.password_hash

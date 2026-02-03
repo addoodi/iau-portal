@@ -135,6 +135,38 @@ class EmailSettingsModel(Base):
     is_active = Column(Boolean, default=False, nullable=False)
 
 
+class AuditLogModel(Base):
+    """
+    Audit log for tracking critical user actions.
+
+    Security and compliance feature that records:
+    - Who performed an action (user_id, email)
+    - What action was performed (create, approve, reject, update, delete)
+    - When it occurred (timestamp)
+    - What entity was affected (entity_type, entity_id)
+    - Additional context (details JSON)
+    - Request metadata (IP address, user agent)
+
+    Use cases:
+    - Compliance audits (who approved which leave requests)
+    - Security investigations (unauthorized access attempts)
+    - Debugging (trace user actions leading to issues)
+    - Analytics (user activity patterns)
+    """
+    __tablename__ = "audit_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    user_id = Column(UUID(as_uuid=True), nullable=True)  # None for system actions
+    user_email = Column(String(255), nullable=True)
+    action = Column(String(100), nullable=False, index=True)  # e.g., "leave_request_approved"
+    entity_type = Column(String(50), nullable=False, index=True)  # e.g., "leave_request"
+    entity_id = Column(String(100), nullable=False, index=True)  # ID of affected entity
+    details = Column(Text, nullable=True)  # JSON string with additional context
+    ip_address = Column(String(50), nullable=True)
+    user_agent = Column(Text, nullable=True)
+
+
 # ==============================================
 # Database Helper Functions
 # ==============================================

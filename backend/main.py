@@ -1,27 +1,57 @@
-from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse, Response
 from typing import List, Optional
+from sqlalchemy.orm import Session
 import io
 import os
 from pathlib import Path
 from datetime import datetime, timedelta
 from hijri_converter import Gregorian
 from dotenv import load_dotenv
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Load environment variables from .env file
 load_dotenv()
 
-from .models import User, UserCreate, LeaveRequest, Employee, EmployeeWithBalance, EmployeeCreate, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UserPasswordUpdate, UnitCreate, UnitUpdate, AttendanceLog, SignatureUpload, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate, DashboardReportRequest, TeamMemberStats
-from .database import init_db
+from .models import User, UserCreate, LeaveRequest, Employee, EmployeeWithBalance, EmployeeCreate, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UserPasswordUpdate, UnitCreate, UnitUpdate, AttendanceLog, SignatureUpload, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate, DashboardReportRequest, TeamMemberStats, AuditLog
+from .database import init_db, get_db
 from .services import UserService, EmployeeService, LeaveRequestService, UnitService, AttendanceService, EmailSettingsService, save_attachment
 from .document_generator import create_vacation_form, create_dashboard_report
 from .auth import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from .dependencies import get_user_service, get_employee_service, get_leave_request_service, get_unit_service, get_attendance_service, get_email_settings_service
 from .calculation import calculate_date_range
+from .audit import (
+    log_audit,
+    ACTION_LEAVE_REQUEST_CREATED,
+    ACTION_LEAVE_REQUEST_APPROVED,
+    ACTION_LEAVE_REQUEST_REJECTED,
+    ACTION_USER_LOGIN,
+    ACTION_USER_LOGIN_FAILED,
+    ENTITY_TYPE_LEAVE_REQUEST,
+    ENTITY_TYPE_USER
+)
+from .exceptions import (
+    InvalidCredentialsError,
+    InactiveUserError,
+    UnauthorizedError,
+    EmployeeNotFoundError,
+    LeaveRequestNotFoundError,
+    AlreadySetupError,
+    PasswordMismatchError,
+    InvalidFileError
+)
 
 app = FastAPI(title="IAU Portal API", version="0.1.0")
+
+# Rate Limiting Configuration
+# Prevents brute force attacks and API abuse
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Initialize database tables on startup
 @app.on_event("startup")
@@ -29,15 +59,26 @@ def on_startup():
     print("[STARTUP] Initializing database tables...")
     init_db()
     print("[STARTUP] Database ready!")
+    print("[SECURITY] Rate limiting enabled")
 
-# CORS Middleware
-# Allow all origins for maximum compatibility in development
+# CORS Middleware - Security hardened
+# Read allowed origins from environment variable
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:5173"  # Development defaults
+).split(",")
+
+# Strip whitespace from each origin
+ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS]
+
+print(f"[SECURITY] CORS configured for origins: {ALLOWED_ORIGINS}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 @app.get("/")
@@ -56,9 +97,10 @@ def setup_status(user_service: UserService = Depends(get_user_service)):
     return {"is_setup": is_setup}
 
 @app.post("/api/setup/initialize", response_model=User, status_code=status.HTTP_201_CREATED)
-def initialize_admin(admin_init: AdminInit, user_service: UserService = Depends(get_user_service)):
+@limiter.limit("3/hour")  # Max 3 admin initialization attempts per hour per IP
+def initialize_admin(request: Request, admin_init: AdminInit, user_service: UserService = Depends(get_user_service)):
     if bool(user_service.get_users()):
-        raise HTTPException(status_code=400, detail="Application is already set up.")
+        raise AlreadySetupError()
     try:
         return user_service.initialize_first_user(admin_init)
     except Exception as e:
@@ -66,14 +108,43 @@ def initialize_admin(admin_init: AdminInit, user_service: UserService = Depends(
 
 # --- Authentication Endpoints ---
 @app.post("/api/token")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), user_service: UserService = Depends(get_user_service)):
+@limiter.limit("5/minute")  # Max 5 login attempts per minute per IP
+def login_for_access_token(
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    user_service: UserService = Depends(get_user_service),
+    db: Session = Depends(get_db)
+):
     user = user_service.authenticate_user(form_data.username, form_data.password)
+
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+        # Audit log: Failed login attempt
+        log_audit(
+            db=db,
+            action=ACTION_USER_LOGIN_FAILED,
+            entity_type=ENTITY_TYPE_USER,
+            entity_id=form_data.username,  # Email attempted
+            user=None,  # No authenticated user for failed login
+            details={"email": form_data.username, "reason": "invalid_credentials"},
+            request=request
         )
+
+        raise InvalidCredentialsError()
+
+    if not user.is_active:
+        raise InactiveUserError()
+
+    # Audit log: Successful login
+    log_audit(
+        db=db,
+        action=ACTION_USER_LOGIN,
+        entity_type=ENTITY_TYPE_USER,
+        entity_id=str(user.id),
+        user=user,
+        details={"role": user.role},
+        request=request
+    )
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
@@ -169,7 +240,9 @@ def update_employee(employee_id: str, employee_update: EmployeeUpdate,
         raise HTTPException(status_code=403, detail="Not authorized to update employees")
 
 @app.post("/api/users/me/password")
-def change_password(password_update: UserPasswordUpdate,
+@limiter.limit("5/hour")  # Max 5 password change attempts per hour per IP
+def change_password(request: Request,
+                    password_update: UserPasswordUpdate,
                     user_service: UserService = Depends(get_user_service),
                     current_user: User = Depends(get_current_user)):
     try:
@@ -286,17 +359,46 @@ def read_leave_request(request_id: int, leave_request_service: LeaveRequestServi
     return leave_request
 
 @app.post("/api/requests", response_model=LeaveRequest, status_code=status.HTTP_201_CREATED)
-def create_leave_request(request_in: LeaveRequestCreate, leave_request_service: LeaveRequestService = Depends(get_leave_request_service), current_user: User = Depends(get_current_user)):
+def create_leave_request(
+    request: Request,
+    request_in: LeaveRequestCreate,
+    leave_request_service: LeaveRequestService = Depends(get_leave_request_service),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     try:
-        return leave_request_service.create_leave_request(request_in, current_user.id)
+        created_request = leave_request_service.create_leave_request(request_in, current_user.id)
+
+        # Audit log: Leave request created
+        log_audit(
+            db=db,
+            action=ACTION_LEAVE_REQUEST_CREATED,
+            entity_type=ENTITY_TYPE_LEAVE_REQUEST,
+            entity_id=str(created_request.id),
+            user=current_user,
+            details={
+                "vacation_type": created_request.vacation_type,
+                "start_date": created_request.start_date,
+                "end_date": created_request.end_date,
+                "duration": created_request.duration
+            },
+            request=request
+        )
+
+        return created_request
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.put("/api/requests/{request_id}", response_model=LeaveRequest)
-def update_leave_request(request_id: int, request_in: LeaveRequestUpdate,
-                         leave_request_service: LeaveRequestService = Depends(get_leave_request_service),
-                         employee_service: EmployeeService = Depends(get_employee_service),
-                         current_user: User = Depends(get_current_user)):
+def update_leave_request(
+    request: Request,
+    request_id: int,
+    request_in: LeaveRequestUpdate,
+    leave_request_service: LeaveRequestService = Depends(get_leave_request_service),
+    employee_service: EmployeeService = Depends(get_employee_service),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Update a leave request (status change for managers, or edit for requester)"""
     from backend.hierarchy import is_subordinate_of
 
@@ -328,9 +430,48 @@ def update_leave_request(request_id: int, request_in: LeaveRequestUpdate,
         if existing_request.employee_id != current_employee.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this request")
 
+    # Store old status for audit logging
+    old_status = existing_request.status
+
     updated_request = leave_request_service.update_leave_request(request_id, request_in)
     if not updated_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
+
+    # Audit log: Status changes (Approval/Rejection)
+    if request_in.status and request_in.status != old_status:
+        if request_in.status.lower() == "approved":
+            log_audit(
+                db=db,
+                action=ACTION_LEAVE_REQUEST_APPROVED,
+                entity_type=ENTITY_TYPE_LEAVE_REQUEST,
+                entity_id=str(request_id),
+                user=current_user,
+                details={
+                    "employee_id": existing_request.employee_id,
+                    "previous_status": old_status,
+                    "new_status": request_in.status,
+                    "vacation_type": existing_request.vacation_type,
+                    "duration": existing_request.duration
+                },
+                request=request
+            )
+        elif request_in.status.lower() == "rejected":
+            log_audit(
+                db=db,
+                action=ACTION_LEAVE_REQUEST_REJECTED,
+                entity_type=ENTITY_TYPE_LEAVE_REQUEST,
+                entity_id=str(request_id),
+                user=current_user,
+                details={
+                    "employee_id": existing_request.employee_id,
+                    "previous_status": old_status,
+                    "new_status": request_in.status,
+                    "vacation_type": existing_request.vacation_type,
+                    "duration": existing_request.duration
+                },
+                request=request
+            )
+
     return updated_request
 
 
@@ -343,12 +484,44 @@ def download_vacation_form(request_id: int,
     leave_request = leave_request_service.get_leave_request_by_id(request_id)
     if not leave_request:
         raise HTTPException(status_code=404, detail="Leave request not found")
-    
-    # TODO: Add authorization check: is this user allowed to download this form?
 
     employee = employee_service.get_employee_by_id(leave_request.employee_id)
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
+
+    # Authorization check: verify user has permission to download this document
+    is_authorized = False
+
+    # 1. Check if user is the employee who made the request
+    if employee.user_id == current_user.id:
+        is_authorized = True
+
+    # 2. Check if user is an admin or dean (full access)
+    elif current_user.role in ['admin', 'dean']:
+        is_authorized = True
+
+    # 3. Check if user is the direct manager of this employee
+    elif employee.manager_id:
+        # Get current user's employee record to check if they are the manager
+        current_user_employee = employee_service.get_employee_by_user_id(current_user.id)
+        if current_user_employee and current_user_employee.id == employee.manager_id:
+            is_authorized = True
+
+    # 4. For managers, check if employee is in their team (indirect reports)
+    if not is_authorized and current_user.role == 'manager':
+        current_user_employee = employee_service.get_employee_by_user_id(current_user.id)
+        if current_user_employee:
+            # Get all employees managed by this manager
+            all_employees = employee_service.get_employees()
+            managed_employee_ids = [emp.id for emp in all_employees if emp.manager_id == current_user_employee.id]
+            if employee.id in managed_employee_ids:
+                is_authorized = True
+
+    if not is_authorized:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to download this document. Only the employee, their manager, or administrators can access this form."
+        )
 
     manager = None
     if employee.manager_id:
@@ -737,6 +910,8 @@ def check_and_renew_contracts(
                         # Send email to manager about auto-renewed contract
                         email_settings_service.send_contract_auto_renewed_notification(
                             manager_email=manager_emp.email,
+                            manager_name_ar=f"{manager_emp.first_name_ar} {manager_emp.last_name_ar}",
+                            manager_name_en=f"{manager_emp.first_name_en} {manager_emp.last_name_en}",
                             employee_name_ar=f"{emp.first_name_ar} {emp.last_name_ar}",
                             employee_name_en=f"{emp.first_name_en} {emp.last_name_en}",
                             employee_id=emp.id,
@@ -874,4 +1049,117 @@ def get_template_status(current_user: User = Depends(get_current_user)):
             "size_kb": round(stat.st_size / 1024, 2)
         }
     return {"exists": False}
+
+
+# ==========================================
+# Admin Audit Logging Endpoints
+# ==========================================
+
+@app.get("/api/admin/audit-logs")
+def get_audit_logs(
+    limit: int = 100,
+    offset: int = 0,
+    action: Optional[str] = None,
+    entity_type: Optional[str] = None,
+    user_id: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get audit logs (admin only).
+
+    Query parameters:
+    - limit: Maximum number of logs to return (default: 100, max: 1000)
+    - offset: Number of logs to skip (for pagination)
+    - action: Filter by action type (e.g., "leave_request_approved")
+    - entity_type: Filter by entity type (e.g., "leave_request")
+    - user_id: Filter by user UUID
+    - start_date: Filter logs after this date (YYYY-MM-DD)
+    - end_date: Filter logs before this date (YYYY-MM-DD)
+
+    Returns:
+    - total: Total number of logs matching filters
+    - logs: List of audit log entries
+
+    Example: GET /api/admin/audit-logs?action=leave_request_approved&limit=50
+    """
+    from .database import AuditLogModel
+    import json
+
+    # Authorization: Admin only
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Admin role required to view audit logs."
+        )
+
+    # Validate limit
+    if limit > 1000:
+        limit = 1000
+
+    # Build query
+    query = db.query(AuditLogModel)
+
+    # Apply filters
+    if action:
+        query = query.filter(AuditLogModel.action == action)
+
+    if entity_type:
+        query = query.filter(AuditLogModel.entity_type == entity_type)
+
+    if user_id:
+        try:
+            from uuid import UUID
+            user_uuid = UUID(user_id)
+            query = query.filter(AuditLogModel.user_id == user_uuid)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid user_id format")
+
+    if start_date:
+        try:
+            start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(AuditLogModel.timestamp >= start_datetime)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
+
+    if end_date:
+        try:
+            end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
+            # Add 1 day to include the entire end_date
+            end_datetime = end_datetime + timedelta(days=1)
+            query = query.filter(AuditLogModel.timestamp < end_datetime)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
+
+    # Get total count
+    total = query.count()
+
+    # Get paginated logs
+    logs = query.order_by(
+        AuditLogModel.timestamp.desc()
+    ).offset(offset).limit(limit).all()
+
+    # Format response
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "logs": [
+            {
+                "id": str(log.id),
+                "timestamp": log.timestamp.isoformat(),
+                "user_id": str(log.user_id) if log.user_id else None,
+                "user_email": log.user_email,
+                "action": log.action,
+                "entity_type": log.entity_type,
+                "entity_id": log.entity_id,
+                "details": json.loads(log.details) if log.details else None,
+                "ip_address": log.ip_address,
+                "user_agent": log.user_agent
+            }
+            for log in logs
+        ]
+    }
 

@@ -4,6 +4,7 @@ from .email_templates import (
     render_leave_request_created_email,
     render_leave_request_approved_email
 )
+from .exceptions import InvalidFileError, PasswordMismatchError
 from typing import List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime, date
@@ -27,23 +28,187 @@ os.makedirs(ATTACHMENTS_DIR, exist_ok=True)
 SIGNATURES_DIR = Path("backend/data/signatures")
 os.makedirs(SIGNATURES_DIR, exist_ok=True)
 
+# Import security configuration
+from .config import (
+    ALLOWED_ATTACHMENT_EXTENSIONS,
+    MAX_ATTACHMENT_SIZE,
+    ALLOWED_SIGNATURE_EXTENSIONS,
+    MAX_SIGNATURE_SIZE,
+    MIME_TYPE_MAP
+)
+
+# ==========================================
+# File Validation Functions (Security)
+# ==========================================
+
+def validate_file_extension(filename: str, allowed_extensions: set) -> tuple[bool, str]:
+    """
+    Validate file extension against whitelist.
+
+    Args:
+        filename: Original filename
+        allowed_extensions: Set of allowed extensions (without dots)
+
+    Returns:
+        (is_valid, error_message): Tuple indicating validation result
+    """
+    ext = Path(filename).suffix.lower().lstrip('.')
+
+    if not ext:
+        return False, "File has no extension"
+
+    if ext not in allowed_extensions:
+        allowed = ', '.join(sorted(allowed_extensions))
+        return False, f"File type '.{ext}' not allowed. Allowed types: {allowed}"
+
+    return True, ""
+
+
+def validate_file_size(file_content: bytes, max_size: int, file_type: str = "file") -> tuple[bool, str]:
+    """
+    Validate file size against maximum limit.
+
+    Args:
+        file_content: File content as bytes
+        max_size: Maximum allowed size in bytes
+        file_type: Type of file for error message (e.g., "attachment", "signature")
+
+    Returns:
+        (is_valid, error_message): Tuple indicating validation result
+    """
+    file_size = len(file_content)
+
+    if file_size > max_size:
+        max_mb = max_size / (1024 * 1024)
+        actual_mb = file_size / (1024 * 1024)
+        return False, f"{file_type.capitalize()} size ({actual_mb:.2f}MB) exceeds maximum allowed size ({max_mb:.0f}MB)"
+
+    if file_size == 0:
+        return False, f"{file_type.capitalize()} is empty (0 bytes)"
+
+    return True, ""
+
+
+def sanitize_filename(filename: str) -> str:
+    """
+    Sanitize filename to prevent path traversal and other attacks.
+
+    Args:
+        filename: Original filename
+
+    Returns:
+        str: Sanitized filename safe for filesystem operations
+    """
+    # Get just the filename without any path components
+    safe_name = Path(filename).name
+
+    # Remove any characters that aren't alphanumeric, dots, underscores, hyphens, or spaces
+    safe_name = "".join(c for c in safe_name if c.isalnum() or c in "._- ")
+
+    # Remove leading/trailing whitespace and dots
+    safe_name = safe_name.strip('. ')
+
+    # Ensure filename is not empty after sanitization
+    if not safe_name or safe_name == '.':
+        safe_name = "attachment"
+
+    return safe_name
+
+
+def validate_attachment_file(file_content: bytes, filename: str) -> tuple[bool, str]:
+    """
+    Comprehensive validation for attachment files.
+    Checks extension, size, and basic security requirements.
+
+    Args:
+        file_content: File content as bytes
+        filename: Original filename
+
+    Returns:
+        (is_valid, error_message): Tuple indicating validation result
+    """
+    # Validate file extension
+    is_valid, error = validate_file_extension(filename, ALLOWED_ATTACHMENT_EXTENSIONS)
+    if not is_valid:
+        return False, error
+
+    # Validate file size
+    is_valid, error = validate_file_size(file_content, MAX_ATTACHMENT_SIZE, "attachment")
+    if not is_valid:
+        return False, error
+
+    return True, ""
+
+
+def validate_signature_image(image_bytes: bytes, filename: str = "signature.png") -> tuple[bool, str]:
+    """
+    Validate signature image file.
+    Checks extension, size, and image format.
+
+    Args:
+        image_bytes: Image content as bytes
+        filename: Filename (optional, defaults to signature.png)
+
+    Returns:
+        (is_valid, error_message): Tuple indicating validation result
+    """
+    # Validate file extension
+    is_valid, error = validate_file_extension(filename, ALLOWED_SIGNATURE_EXTENSIONS)
+    if not is_valid:
+        return False, error
+
+    # Validate file size
+    is_valid, error = validate_file_size(image_bytes, MAX_SIGNATURE_SIZE, "signature")
+    if not is_valid:
+        return False, error
+
+    return True, ""
+
+# ==========================================
+# File Storage Functions
+# ==========================================
+
 def save_attachment(file_content: bytes, filename: str, employee_id: str) -> str:
-    """Saves a file to the attachments directory and returns its path."""
+    """
+    Saves a file to the attachments directory and returns its path.
+
+    Security features:
+    - Validates file extension against whitelist
+    - Validates file size (max 10MB)
+    - Sanitizes filename to prevent path traversal
+    - Uses UUID prefix to prevent name collisions
+
+    Args:
+        file_content: File content as bytes
+        filename: Original filename
+        employee_id: Employee ID for organizing attachments
+
+    Returns:
+        str: Path to saved file
+
+    Raises:
+        ValueError: If file validation fails (invalid extension, too large, etc.)
+    """
+    # Validate file before saving
+    is_valid, error_message = validate_attachment_file(file_content, filename)
+    if not is_valid:
+        raise InvalidFileError(error_message)
+
     # Ensure directory for employee exists
     employee_attachments_dir = ATTACHMENTS_DIR / employee_id
     os.makedirs(employee_attachments_dir, exist_ok=True)
 
-    # Sanitize filename (basic sanitation, more robust needed for production)
-    safe_filename = "".join(c for c in filename if c.isalnum() or c in ('.', '_', '-')).rstrip()
-    if not safe_filename:
-        safe_filename = f"{uuid4()}" # Fallback to UUID if filename is empty after sanitization
-    
+    # Sanitize filename (production-ready sanitation)
+    safe_filename = sanitize_filename(filename)
+
     # Prepend UUID to avoid name collisions and ensure uniqueness
     final_filename = f"{uuid4()}_{safe_filename}"
     file_path = employee_attachments_dir / final_filename
-    
+
+    # Save file
     with open(file_path, "wb") as f:
         f.write(file_content)
+
     return str(file_path) # Return string representation for storage
 
 class UserService:
@@ -208,13 +373,11 @@ class EmployeeService:
                 raise Exception(f"Employee ID '{new_employee_id}' already exists")
 
             # Update leave requests that reference this employee
-            from .repositories import CSVLeaveRequestRepository
-            leave_repo = CSVLeaveRequestRepository()
-            all_requests = leave_repo.get_all()
+            all_requests = self.leave_request_repository.get_all()
             for req in all_requests:
                 if req.employee_id == employee_id:
                     req.employee_id = new_employee_id
-                    leave_repo.update(req)
+                    self.leave_request_repository.update(req)
 
             # Update manager references in other employees
             all_employees = self.employee_repository.get_all()
@@ -297,15 +460,16 @@ class EmployeeService:
                         # Get the actual employee record
                         employee = self.employee_repository.get_by_id(emp.id)
                         if employee:
-                            # Set new contract end date to 1 year from old date
-                            new_end_date = contract_end + timedelta(days=365)
-                            employee.contract_end_date = new_end_date.strftime('%Y-%m-%d')
+                            # Flag as auto-renewed so managers can verify
+                            # Note: contract_end_date is computed from start_date
+                            # via get_current_contract_period(), which automatically
+                            # advances to the next 11-month period.
                             employee.contract_auto_renewed = True
 
                             # Update in repository
                             self.employee_repository.update(employee)
 
-                            # Get updated employee with balance
+                            # Get updated employee with balance (includes new computed contract_end_date)
                             renewed_emp = self._get_employee_with_balance(employee)
                             renewed_employees.append(renewed_emp)
 
@@ -405,15 +569,39 @@ class EmployeeService:
         return self._get_employee_with_balance(created_employee)
 
     def upload_signature(self, user_id: UUID, base64_image: str) -> str:
+        """
+        Upload and save user's signature image.
+
+        Security features:
+        - Validates image size (max 500KB)
+        - Optimizes image for storage
+        - Validates file extension
+
+        Args:
+            user_id: UUID of the user
+            base64_image: Base64 encoded image data
+
+        Returns:
+            str: Path to saved signature file
+
+        Raises:
+            Exception: If employee not found
+            ValueError: If signature validation fails
+        """
         employee = self.employee_repository.get_by_user_id(user_id)
         if not employee:
             raise Exception("Employee profile not found")
 
-        # Optimize signature image
+        # Optimize signature image (returns PNG bytes)
         optimized_bytes = optimize_signature_image(base64_image, max_width=600)
 
-        # Save as PNG (optimization always outputs PNG)
+        # Validate optimized signature image
         filename = f"{employee.id}_signature.png"
+        is_valid, error_message = validate_signature_image(optimized_bytes, filename)
+        if not is_valid:
+            raise InvalidFileError(error_message)
+
+        # Save as PNG (optimization always outputs PNG)
         file_path = SIGNATURES_DIR / filename
 
         with open(file_path, "wb") as f:
@@ -437,6 +625,29 @@ class LeaveRequestService:
         return self.leave_request_repository.get_by_id(leave_request_id)
 
     def create_leave_request(self, leave_request_create: LeaveRequestCreate, user_id: UUID) -> LeaveRequest:
+        """
+        Create a new leave request for an employee.
+
+        IMPORTANT: This method intentionally allows requests that exceed available balance.
+        The university requires flexibility for special cases such as:
+        - Emergency leave situations
+        - Carried over days from previous years
+        - Managerial discretion for exceptional circumstances
+
+        Balance is informational and displayed to users, but does not block request creation.
+        Managers/administrators review balance during the approval process and can make
+        informed decisions based on the specific situation.
+
+        Args:
+            leave_request_create: Leave request data
+            user_id: UUID of the user creating the request
+
+        Returns:
+            LeaveRequest: The created leave request
+
+        Raises:
+            Exception: If no employee profile found for the user
+        """
         employee = self.employee_service.get_employee_by_user_id(user_id)
         if not employee:
             raise Exception("No employee profile found for current user.") # Or a more specific HTTP exception
@@ -447,7 +658,7 @@ class LeaveRequestService:
 
         all_requests = self.leave_request_repository.get_all()
         new_id = max([req.id for req in all_requests]) + 1 if all_requests else 1
-        
+
         leave_request = LeaveRequest(
             id=new_id,
             employee_id=employee.id, # Use the authenticated user's employee ID
@@ -455,7 +666,7 @@ class LeaveRequestService:
             start_date=leave_request_create.start_date,
             end_date=leave_request_create.end_date,
             duration=duration,
-            balance_used=duration, # TODO: Check against balance
+            balance_used=duration, # Note: Balance is not enforced - requests can exceed available balance (by design)
             status='Pending',
             attachments=leave_request_create.attachments # Save attachment paths
         )
