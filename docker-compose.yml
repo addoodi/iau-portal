@@ -31,21 +31,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-      args:
-        - CACHEBUST=${CACHEBUST:-1}
-      no_cache: true
-    pull_policy: build
     container_name: iau-portal-backend
     restart: unless-stopped
     # Backend is only accessible through nginx proxy, no direct external access needed
     expose:
       - "8000"
     volumes:
-      # Data storage - Keep for attachments, signatures, templates
-      - /home/addoodi/appdata/iau-portal/data:/app/backend/data
-      - /home/addoodi/appdata/iau-portal/templates:/app/backend/templates
+      # Persistent storage for file uploads (attachments, signatures, templates)
+      - ${DATA_PATH:-./backend/data}:/app/backend/data
+      - ${TEMPLATES_PATH:-./backend/templates}:/app/backend/templates
     environment:
       - PYTHONUNBUFFERED=1
+      # Security (CRITICAL - set these in .env before production deployment)
+      - SECRET_KEY=${SECRET_KEY:-}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
       # PostgreSQL connection
       - DATABASE_URL=postgresql://${POSTGRES_USER:-iau_admin}:${POSTGRES_PASSWORD:-iau_secure_password_2024}@postgres:5432/${POSTGRES_DB:-iau_portal}
       # SMTP Email Configuration
@@ -73,10 +73,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-      args:
-        - CACHEBUST=${CACHEBUST:-1}
-      no_cache: true
-    pull_policy: build
     container_name: iau-portal-frontend
     restart: unless-stopped
     ports:

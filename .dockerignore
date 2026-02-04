@@ -7,6 +7,9 @@ __pycache__/
 *.pyd
 .Python
 
+# Backend code (not needed for frontend build)
+backend/
+
 # Build outputs (will be regenerated)
 build/
 dist/
@@ -34,11 +37,15 @@ yarn-error.log*
 
 # Documentation (not needed in container)
 README.md
-DEPLOYMENT.md
-VITE_MIGRATION_PLAN.md
+docs/
 CLAUDE.md
-DOCKER-README.md
-PORTAINER-DEPLOY.md
+Gemini.md
+Gemini-database.md
+form-guide.md
+EMAIL_SETUP.md
+NPM-SETUP.md
+VITE_MIGRATION_PLAN.md
+DEPLOYMENT_PACKAGE_README.txt
 
 # Testing
 .pytest_cache/
@@ -57,7 +64,7 @@ Dockerfile*
 docker-compose*.yml
 .dockerignore
 
-# IMPORTANT: Keep these files
+# IMPORTANT: Keep these files (negation patterns)
 !package.json
 !package-lock.json
 !requirements.txt

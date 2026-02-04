@@ -3,8 +3,8 @@
 > **Purpose:** This file provides complete context for AI coding assistants (Claude, GPT, Gemini, etc.) and serves as the technical handover guide for university IT staff.
 
 **Last Updated:** 2026-01-05
-**Project Status:** Pilot Phase - Phase 2 Complete, Production Security Hardening Complete
-**Current Version:** 0.3.0 (Security Hardened)
+**Project Status:** Pilot Phase - Phase 3 Complete, Production Ready
+**Current Version:** 0.4.0 (Production Ready)
 
 ---
 
@@ -468,29 +468,29 @@ const {
 
 ---
 
-### 6.3 Phase 3: Production Readiness (WEEKS 7-12) 🟡 **FOR HANDOVER**
+### 6.3 Phase 3: Production Readiness (WEEKS 7-12) ✅ **COMPLETE**
 
 **Goal:** Professional deployment ready for university IT
 
 | Task | Time | Priority | Status |
 |------|------|----------|--------|
-| **Create Docker Containers** | 3 hrs | HIGH | ⏳ Pending |
-| - Write Dockerfile (frontend) | 45 min | | |
-| - Write Dockerfile (backend) | 45 min | | |
-| - Create docker-compose.yml | 30 min | | |
-| - Test locally | 1 hr | | |
-| **Write Handover Documentation** | 2 hrs | HIGH | ⏳ Pending |
-| - Deployment guide (step-by-step) | 1 hr | | |
-| - User manual (screenshots) | 1 hr | | |
-| **Implement Audit Logging** | 3 hrs | MEDIUM | ⏳ Pending |
-| - Create audit_logs table | 30 min | | |
-| - Add logging to critical actions | 1.5 hrs | | |
-| - Create admin audit viewer | 1 hr | | |
-| **Create Manual QA Checklist** | 1 hr | MEDIUM | ⏳ Pending |
-| - Login/logout scenarios | 15 min | | |
-| - Leave request workflows | 20 min | | |
-| - Document generation | 15 min | | |
-| - Admin operations | 10 min | | |
+| **Create Docker Containers** | 3 hrs | HIGH | ✅ Complete |
+| - Write Dockerfile (frontend) | 45 min | | ✅ |
+| - Write Dockerfile (backend) | 45 min | | ✅ |
+| - Create docker-compose.yml | 30 min | | ✅ |
+| - Test locally | 1 hr | | ✅ |
+| **Write Handover Documentation** | 2 hrs | HIGH | ✅ Complete |
+| - Deployment guide (step-by-step) | 1 hr | | ✅ `docs/DEPLOYMENT.md` |
+| - User manual (screenshots) | 1 hr | | ✅ `docs/user_guides/` |
+| **Implement Audit Logging** | 3 hrs | MEDIUM | ✅ Complete |
+| - Create audit_logs table | 30 min | | ✅ |
+| - Add logging to critical actions | 1.5 hrs | | ✅ All endpoints |
+| - Create admin audit viewer | 1 hr | | ✅ |
+| **Create Manual QA Checklist** | 1 hr | MEDIUM | ✅ Complete |
+| - Login/logout scenarios | 15 min | | ✅ `docs/QA-CHECKLIST.md` |
+| - Leave request workflows | 20 min | | ✅ |
+| - Document generation | 15 min | | ✅ |
+| - Admin operations | 10 min | | ✅ |
 
 **Deliverable:** Production-ready system with Docker + documentation
 
@@ -525,8 +525,8 @@ const {
 | **CRA is deprecated** | Security vulnerabilities, no updates | Migrate to Vite | Phase 2 (Week 3) |
 | **CSV storage** | Data corruption, race conditions | Migrate to SQLite | Phase 2 (Week 4-5) |
 | **No tests** | Breaking changes undetected | Critical path tests | Phase 2 (Week 6) |
-| **No audit logs** | Cannot track malicious actions | Implement audit logging | Phase 3 (Week 9) |
-| **CORS = `*`** | Security vulnerability | Restrict to university domain | Phase 3 (deployment) |
+| ~~**No audit logs**~~ | ~~Cannot track malicious actions~~ | ~~Implement audit logging~~ | ✅ Resolved (v0.3.0) |
+| ~~**CORS = `*`**~~ | ~~Security vulnerability~~ | ~~Restrict to university domain~~ | ✅ Resolved (v0.3.0) |
 
 ### 7.2 Medium-Priority Technical Debt
 
@@ -933,6 +933,7 @@ docker-compose up -d
 | 0.1.0 | 2025-12-26 | Initial CLAUDE.md creation, tech stack validation, roadmap defined | Claude Sonnet 4.5 |
 | 0.2.0 | 2025-12-27 | Vite migration complete, PostgreSQL migration complete | Claude Sonnet 4.5 |
 | 0.3.0 | 2026-01-05 | **Security hardening complete**: JWT secrets, CORS restrictions, file upload validation, authorization checks, audit logging system, comprehensive security review | Claude Sonnet 4.5 |
+| 0.4.0 | 2026-02-04 | **Phase 3 complete**: Docker fixes (hardcoded paths, missing env vars, no_cache removal), consolidated deployment docs (6 docs → 1), QA checklist, approval workflow tests (41 passing), full audit logging on all endpoints, notification scheduler migrated to DB | Claude Opus 4.5 |
 
 ---
 
@@ -942,17 +943,18 @@ docker-compose up -d
 
 ---
 
-## Appendix B: Docker Configuration Template
+## Appendix B: Docker Configuration
 
-*See Section 6.3 - will be created in Phase 3*
+See `docker-compose.yml` in the project root and `docs/DEPLOYMENT.md` for the full deployment guide.
 
 ---
 
 **END OF CLAUDE.md**
 
-> **Next Steps:**
-> 1. Initialize Git (Phase 1, Week 1)
-> 2. Migrate CRA → Vite (Phase 2, Week 3)
-> 3. Migrate CSV → SQLite (Phase 2, Week 4-5)
+> **Next Steps (Phase 4 - Optional Enhancements):**
+> 1. Real-time WebSocket updates
+> 2. SQLite → PostgreSQL migration (already on PostgreSQL in Docker)
+> 3. Live email notifications
+> 4. PWA offline support
 >
-> **For University IT:** See Section 9 (Handover Strategy)
+> **For University IT:** See Section 9 (Handover Strategy) and `docs/DEPLOYMENT.md`

@@ -107,7 +107,7 @@ We utilize **Docker Compose** for a unified deployment of Frontend (React), Back
     npm install
     npm run build
     ```
-3.  Serve the `dist` folder using Nginx/Apache.
+3.  Serve the `build` folder using Nginx/Apache.
 
 ### Troubleshooting
 
