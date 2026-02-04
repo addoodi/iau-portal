@@ -1,4 +1,3 @@
-from .repositories import CSVUserRepository, CSVEmployeeRepository, CSVLeaveRequestRepository, CSVUnitRepository, CSVAttendanceRepository, CSVEmailSettingsRepository
 from .models import User, UserCreate, Employee, EmployeeCreate, EmployeeWithBalance, LeaveRequest, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UnitCreate, UnitUpdate, AttendanceLog, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate
 from .email_templates import (
     render_leave_request_created_email,
@@ -9,7 +8,10 @@ from typing import List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime, date
 from .password import verify_password, get_password_hash, verify_password_raw
-from .calculation import calculate_vacation_balance, get_current_contract_period
+from .calculation import (
+    calculate_vacation_balance, get_current_contract_period,
+    calculate_permanent_vacation_balance, get_permanent_contract_period
+)
 from .image_utils import optimize_signature_image
 import base64
 import os
@@ -212,7 +214,7 @@ def save_attachment(file_content: bytes, filename: str, employee_id: str) -> str
     return str(file_path) # Return string representation for storage
 
 class UserService:
-    def __init__(self, user_repository: CSVUserRepository, employee_repository: CSVEmployeeRepository):
+    def __init__(self, user_repository, employee_repository):
         self.user_repository = user_repository
         self.employee_repository = employee_repository
 
@@ -306,38 +308,58 @@ class UserService:
         self.user_repository.delete(user_id)
 
 class EmployeeService:
-    def __init__(self, employee_repository: CSVEmployeeRepository, user_repository: CSVUserRepository, leave_request_repository: CSVLeaveRequestRepository):
+    def __init__(self, employee_repository, user_repository, leave_request_repository, portal_settings_repository=None):
         self.employee_repository = employee_repository
         self.user_repository = user_repository
         self.leave_request_repository = leave_request_repository
+        self.portal_settings_repository = portal_settings_repository
 
     def _get_employee_with_balance(self, employee: Employee) -> EmployeeWithBalance:
         if not employee:
             return None
-        
+
         all_requests = self.leave_request_repository.get_all()
         approved_requests = [req for req in all_requests if req.status == 'Approved' and req.employee_id == employee.id]
-        
-        balance = calculate_vacation_balance(employee, approved_requests)
-        
-        employee_data = employee.dict()
-        employee_data['vacation_balance'] = balance
 
-        # Contract Details
-        try:
-            start_date_obj = datetime.strptime(employee.start_date, "%Y-%m-%d").date()
-            _, contract_end = get_current_contract_period(start_date_obj, date.today())
-            employee_data['contract_end_date'] = contract_end.isoformat()
-            employee_data['days_remaining_in_contract'] = (contract_end - date.today()).days
-        except Exception:
-            pass # Handle potential parsing errors gracefully
+        employee_data = employee.dict()
+
+        if employee.employee_type == 'permanent':
+            # Permanent employee: calendar year with carry-over
+            max_carry_over = 15
+            if self.portal_settings_repository:
+                settings = self.portal_settings_repository.get()
+                max_carry_over = settings.max_carry_over_days
+
+            balance, carry_over = calculate_permanent_vacation_balance(
+                employee, approved_requests, max_carry_over
+            )
+            employee_data['vacation_balance'] = balance
+            employee_data['carry_over_balance'] = carry_over
+
+            # Contract period is calendar year
+            today = date.today()
+            _, year_end = get_permanent_contract_period(today)
+            employee_data['contract_end_date'] = year_end.isoformat()
+            employee_data['days_remaining_in_contract'] = (year_end - today).days
+        else:
+            # Contractor: existing 11-month rolling contract logic
+            balance = calculate_vacation_balance(employee, approved_requests)
+            employee_data['vacation_balance'] = balance
+
+            try:
+                start_date_obj = datetime.strptime(employee.start_date, "%Y-%m-%d").date()
+                _, contract_end = get_current_contract_period(start_date_obj, date.today())
+                employee_data['contract_end_date'] = contract_end.isoformat()
+                employee_data['days_remaining_in_contract'] = (contract_end - date.today()).days
+            except Exception:
+                pass
 
         # Fetch user details (role, email)
         user = self.user_repository.get_by_id(employee.user_id)
         if user:
             employee_data['role'] = user.role
             employee_data['email'] = user.email
-        
+
         return EmployeeWithBalance(**employee_data)
 
     def get_employees(self) -> List[EmployeeWithBalance]:
@@ -451,6 +473,9 @@ class EmployeeService:
         renewed_employees = []
 
         for emp in all_employees:
+            # Skip permanent employees (calendar year, no contract renewal)
+            if getattr(emp, 'employee_type', 'contractor') == 'permanent':
+                continue
             if emp.contract_end_date and emp.contract_end_date != 'N/A':
                 try:
                     contract_end = datetime.strptime(emp.contract_end_date, '%Y-%m-%d').date()
@@ -614,7 +639,7 @@ class EmployeeService:
         return str(file_path)
 
 class LeaveRequestService:
-    def __init__(self, leave_request_repository: CSVLeaveRequestRepository, employee_service: EmployeeService):
+    def __init__(self, leave_request_repository, employee_service: EmployeeService):
         self.leave_request_repository = leave_request_repository
         self.employee_service = employee_service
 
@@ -765,7 +790,7 @@ class LeaveRequestService:
         return self.leave_request_repository.update(leave_request)
 
 class UnitService:
-    def __init__(self, unit_repository: CSVUnitRepository):
+    def __init__(self, unit_repository):
         self.unit_repository = unit_repository
 
     def get_units(self) -> List[Unit]:
@@ -802,7 +827,7 @@ class UnitService:
         self.unit_repository.delete(unit_id)
 
 class AttendanceService:
-    def __init__(self, attendance_repository: CSVAttendanceRepository, employee_service: EmployeeService, leave_request_repository: CSVLeaveRequestRepository):
+    def __init__(self, attendance_repository, employee_service: EmployeeService, leave_request_repository):
         self.attendance_repository = attendance_repository
         self.employee_service = employee_service
         self.leave_request_repository = leave_request_repository
@@ -826,7 +851,7 @@ class AttendanceService:
         return {"status": "Present"}
 
 class EmailSettingsService:
-    def __init__(self, email_settings_repository: CSVEmailSettingsRepository):
+    def __init__(self, email_settings_repository):
         self.email_settings_repository = email_settings_repository
         
     def get_email_settings(self) -> Optional[EmailSettings]:

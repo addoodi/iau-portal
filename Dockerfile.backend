@@ -1,9 +1,6 @@
 # Backend Dockerfile - FastAPI Application
 FROM python:3.11-slim
 
-# Build argument to force rebuild when needed
-ARG CACHEBUST=1
-
 # Set working directory
 WORKDIR /app
 
@@ -11,6 +8,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     curl \
+    libreoffice-writer \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -22,7 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend code
 COPY backend/ ./backend/
 
-# Create data directory for CSV files
+# Create data directories for file uploads (attachments, signatures)
 RUN mkdir -p /app/backend/data/attachments \
     && mkdir -p /app/backend/data/signatures
 

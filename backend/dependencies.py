@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .db_repositories import (
     DBUserRepository, DBEmployeeRepository, DBLeaveRequestRepository,
-    DBUnitRepository, DBAttendanceRepository, DBEmailSettingsRepository
+    DBUnitRepository, DBAttendanceRepository, DBEmailSettingsRepository,
+    DBPortalSettingsRepository
 )
 from .services import UserService, EmployeeService, LeaveRequestService, UnitService, AttendanceService, EmailSettingsService
 from .email_service import EmailService
@@ -20,7 +21,8 @@ def get_employee_service(db: Session = Depends(get_db)) -> EmployeeService:
     employee_repo = DBEmployeeRepository(db)
     user_repo = DBUserRepository(db)
     leave_request_repo = DBLeaveRequestRepository(db)
-    return EmployeeService(employee_repo, user_repo, leave_request_repo)
+    portal_settings_repo = DBPortalSettingsRepository(db)
+    return EmployeeService(employee_repo, user_repo, leave_request_repo, portal_settings_repo)
 
 def get_leave_request_service(db: Session = Depends(get_db)) -> LeaveRequestService:
     leave_request_repo = DBLeaveRequestRepository(db)
@@ -43,3 +45,6 @@ def get_email_service() -> EmailService:
 def get_email_settings_service(db: Session = Depends(get_db)) -> EmailSettingsService:
     email_settings_repo = DBEmailSettingsRepository(db)
     return EmailSettingsService(email_settings_repo)
+
+def get_portal_settings_repo(db: Session = Depends(get_db)) -> DBPortalSettingsRepository:
+    return DBPortalSettingsRepository(db)

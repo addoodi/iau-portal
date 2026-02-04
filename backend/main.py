@@ -17,12 +17,12 @@ from slowapi.errors import RateLimitExceeded
 # Load environment variables from .env file
 load_dotenv()
 
-from .models import User, UserCreate, LeaveRequest, Employee, EmployeeWithBalance, EmployeeCreate, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UserPasswordUpdate, UnitCreate, UnitUpdate, AttendanceLog, SignatureUpload, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate, DashboardReportRequest, TeamMemberStats, AuditLog
+from .models import User, UserCreate, LeaveRequest, Employee, EmployeeWithBalance, EmployeeCreate, LeaveRequestCreate, LeaveRequestUpdate, AdminInit, Unit, EmployeeUpdate, UserPasswordUpdate, UnitCreate, UnitUpdate, AttendanceLog, SignatureUpload, EmailSettings, EmailSettingsCreate, EmailSettingsUpdate, DashboardReportRequest, TeamMemberStats, AuditLog, PortalSettings, PortalSettingsUpdate
 from .database import init_db, get_db
 from .services import UserService, EmployeeService, LeaveRequestService, UnitService, AttendanceService, EmailSettingsService, save_attachment
 from .document_generator import create_vacation_form, create_dashboard_report
 from .auth import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
-from .dependencies import get_user_service, get_employee_service, get_leave_request_service, get_unit_service, get_attendance_service, get_email_settings_service
+from .dependencies import get_user_service, get_employee_service, get_leave_request_service, get_unit_service, get_attendance_service, get_email_settings_service, get_portal_settings_repo
 from .calculation import calculate_date_range
 from .audit import (
     log_audit,
@@ -31,8 +31,18 @@ from .audit import (
     ACTION_LEAVE_REQUEST_REJECTED,
     ACTION_USER_LOGIN,
     ACTION_USER_LOGIN_FAILED,
+    ACTION_EMPLOYEE_CREATED,
+    ACTION_EMPLOYEE_UPDATED,
+    ACTION_USER_DELETED,
+    ACTION_PASSWORD_CHANGED,
+    ACTION_SIGNATURE_UPLOADED,
+    ACTION_UNIT_CREATED,
+    ACTION_UNIT_UPDATED,
+    ACTION_UNIT_DELETED,
     ENTITY_TYPE_LEAVE_REQUEST,
-    ENTITY_TYPE_USER
+    ENTITY_TYPE_USER,
+    ENTITY_TYPE_EMPLOYEE,
+    ENTITY_TYPE_UNIT
 )
 from .exceptions import (
     InvalidCredentialsError,
@@ -167,13 +177,24 @@ def read_users(user_service: UserService = Depends(get_user_service), current_us
     return user_service.get_users()
 
 @app.delete("/api/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(user_id: str, 
-                user_service: UserService = Depends(get_user_service), 
-                current_user: User = Depends(get_current_user)):
+def delete_user(request: Request,
+                user_id: str,
+                user_service: UserService = Depends(get_user_service),
+                current_user: User = Depends(get_current_user),
+                db: Session = Depends(get_db)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to delete users")
     try:
         user_service.delete_user(user_id)
+        log_audit(
+            db=db,
+            action=ACTION_USER_DELETED,
+            entity_type=ENTITY_TYPE_USER,
+            entity_id=user_id,
+            user=current_user,
+            details=None,
+            request=request
+        )
         return None
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -181,20 +202,34 @@ def delete_user(user_id: str,
 
 # --- Employee Endpoints ---
 @app.post("/api/employees", response_model=EmployeeWithBalance, status_code=status.HTTP_201_CREATED)
-def create_employee_and_user(employee_create: EmployeeCreate, 
+def create_employee_and_user(request: Request,
+                             employee_create: EmployeeCreate,
                              employee_service: EmployeeService = Depends(get_employee_service),
-                             current_user: User = Depends(get_current_user)):
+                             current_user: User = Depends(get_current_user),
+                             db: Session = Depends(get_db)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to create employees")
     try:
-        return employee_service.create_user_and_employee(employee_create)
+        created = employee_service.create_user_and_employee(employee_create)
+        log_audit(
+            db=db,
+            action=ACTION_EMPLOYEE_CREATED,
+            entity_type=ENTITY_TYPE_EMPLOYEE,
+            entity_id=created.id,
+            user=current_user,
+            details={"email": employee_create.email, "role": employee_create.role},
+            request=request
+        )
+        return created
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.put("/api/employees/{employee_id}", response_model=EmployeeWithBalance)
-def update_employee(employee_id: str, employee_update: EmployeeUpdate,
+def update_employee(request: Request,
+                    employee_id: str, employee_update: EmployeeUpdate,
                     employee_service: EmployeeService = Depends(get_employee_service),
-                    current_user: User = Depends(get_current_user)):
+                    current_user: User = Depends(get_current_user),
+                    db: Session = Depends(get_db)):
 
     # Get current user's employee record
     current_employee = employee_service.get_employee_by_user_id(current_user.id)
@@ -205,6 +240,15 @@ def update_employee(employee_id: str, employee_update: EmployeeUpdate,
             updated_employee = employee_service.update_employee(employee_id, employee_update)
             # Clear contract verification flag when admin edits employee
             employee_service.clear_contract_verification_flag(employee_id)
+            log_audit(
+                db=db,
+                action=ACTION_EMPLOYEE_UPDATED,
+                entity_type=ENTITY_TYPE_EMPLOYEE,
+                entity_id=employee_id,
+                user=current_user,
+                details={"updated_fields": list(employee_update.dict(exclude_unset=True).keys())},
+                request=request
+            )
             return updated_employee
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -244,33 +288,65 @@ def update_employee(employee_id: str, employee_update: EmployeeUpdate,
 def change_password(request: Request,
                     password_update: UserPasswordUpdate,
                     user_service: UserService = Depends(get_user_service),
-                    current_user: User = Depends(get_current_user)):
+                    current_user: User = Depends(get_current_user),
+                    db: Session = Depends(get_db)):
     try:
         user_service.change_password(current_user.id, password_update.current_password, password_update.new_password)
+        log_audit(
+            db=db,
+            action=ACTION_PASSWORD_CHANGED,
+            entity_type=ENTITY_TYPE_USER,
+            entity_id=str(current_user.id),
+            user=current_user,
+            details=None,
+            request=request
+        )
         return {"message": "Password updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/users/me/signature")
-def upload_signature_endpoint(signature_data: SignatureUpload,
+def upload_signature_endpoint(request: Request,
+                              signature_data: SignatureUpload,
                               employee_service: EmployeeService = Depends(get_employee_service),
-                              current_user: User = Depends(get_current_user)):
+                              current_user: User = Depends(get_current_user),
+                              db: Session = Depends(get_db)):
     try:
         path = employee_service.upload_signature(current_user.id, signature_data.image_base64)
+        log_audit(
+            db=db,
+            action=ACTION_SIGNATURE_UPLOADED,
+            entity_type=ENTITY_TYPE_EMPLOYEE,
+            entity_id=str(current_user.id),
+            user=current_user,
+            details=None,
+            request=request
+        )
         return {"message": "Signature uploaded successfully", "path": path}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.delete("/api/users/me/signature")
-def delete_signature_endpoint(employee_service: EmployeeService = Depends(get_employee_service),
-                              current_user: User = Depends(get_current_user)):
+def delete_signature_endpoint(request: Request,
+                              employee_service: EmployeeService = Depends(get_employee_service),
+                              current_user: User = Depends(get_current_user),
+                              db: Session = Depends(get_db)):
     try:
         employee = employee_service.get_employee_by_user_id(current_user.id)
         if employee and employee.signature_path:
             # Optional: Delete file from disk
-            # os.remove(employee.signature_path) 
+            # os.remove(employee.signature_path)
             employee.signature_path = None
             employee_service.employee_repository.update(employee)
+        log_audit(
+            db=db,
+            action="signature_deleted",
+            entity_type=ENTITY_TYPE_EMPLOYEE,
+            entity_id=str(current_user.id),
+            user=current_user,
+            details=None,
+            request=request
+        )
         return {"message": "Signature removed"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -292,34 +368,60 @@ def read_units(unit_service: UnitService = Depends(get_unit_service), current_us
     return unit_service.get_units()
 
 @app.post("/api/units", response_model=Unit, status_code=status.HTTP_201_CREATED)
-def create_unit(unit_create: UnitCreate, 
-                unit_service: UnitService = Depends(get_unit_service), 
-                current_user: User = Depends(get_current_user)):
+def create_unit(request: Request,
+                unit_create: UnitCreate,
+                unit_service: UnitService = Depends(get_unit_service),
+                current_user: User = Depends(get_current_user),
+                db: Session = Depends(get_db)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to create units")
     try:
-        return unit_service.create_unit(unit_create)
+        created = unit_service.create_unit(unit_create)
+        log_audit(
+            db=db,
+            action=ACTION_UNIT_CREATED,
+            entity_type=ENTITY_TYPE_UNIT,
+            entity_id=str(created.id),
+            user=current_user,
+            details={"name_en": unit_create.name_en, "name_ar": unit_create.name_ar},
+            request=request
+        )
+        return created
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.put("/api/units/{unit_id}", response_model=Unit)
-def update_unit(unit_id: int,
+def update_unit(request: Request,
+                unit_id: int,
                 unit_update: UnitUpdate,
                 unit_service: UnitService = Depends(get_unit_service),
-                current_user: User = Depends(get_current_user)):
+                current_user: User = Depends(get_current_user),
+                db: Session = Depends(get_db)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to update units")
     try:
-        return unit_service.update_unit(unit_id, unit_update)
+        updated = unit_service.update_unit(unit_id, unit_update)
+        log_audit(
+            db=db,
+            action=ACTION_UNIT_UPDATED,
+            entity_type=ENTITY_TYPE_UNIT,
+            entity_id=str(unit_id),
+            user=current_user,
+            details={"updated_fields": list(unit_update.dict(exclude_unset=True).keys())},
+            request=request
+        )
+        return updated
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.delete("/api/units/{unit_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_unit(
+    request: Request,
     unit_id: int,
     unit_service: UnitService = Depends(get_unit_service),
     employee_service: EmployeeService = Depends(get_employee_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """Delete a unit if it has no assigned employees"""
     if current_user.role != "admin":
@@ -340,6 +442,15 @@ def delete_unit(
             )
 
         unit_service.delete_unit(unit_id)
+        log_audit(
+            db=db,
+            action=ACTION_UNIT_DELETED,
+            entity_type=ENTITY_TYPE_UNIT,
+            entity_id=str(unit_id),
+            user=current_user,
+            details=None,
+            request=request
+        )
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except HTTPException:
         raise
@@ -477,6 +588,7 @@ def update_leave_request(
 
 @app.get("/api/requests/{request_id}/download")
 def download_vacation_form(request_id: int,
+                           format: str = "docx",
                            employee_service: EmployeeService = Depends(get_employee_service),
                            leave_request_service: LeaveRequestService = Depends(get_leave_request_service),
                            current_user: User = Depends(get_current_user)):
@@ -571,6 +683,18 @@ def download_vacation_form(request_id: int,
     }
 
     file_stream = create_vacation_form(context)
+
+    if format == "pdf":
+        from .pdf_converter import convert_docx_to_pdf
+        try:
+            pdf_stream = convert_docx_to_pdf(file_stream)
+            return StreamingResponse(
+                pdf_stream,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename=vacation_request_{request_id}.pdf"}
+            )
+        except RuntimeError as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
     return StreamingResponse(
         file_stream,
@@ -1049,6 +1173,35 @@ def get_template_status(current_user: User = Depends(get_current_user)):
             "size_kb": round(stat.st_size / 1024, 2)
         }
     return {"exists": False}
+
+
+# ==========================================
+# Portal Settings Endpoints
+# ==========================================
+
+@app.get("/api/settings/portal")
+def get_portal_settings(
+    portal_settings_repo=Depends(get_portal_settings_repo),
+    current_user: User = Depends(get_current_user)
+):
+    """Get global portal settings (any authenticated user)"""
+    return portal_settings_repo.get()
+
+@app.put("/api/settings/portal")
+def update_portal_settings(
+    update_data: PortalSettingsUpdate,
+    portal_settings_repo=Depends(get_portal_settings_repo),
+    current_user: User = Depends(get_current_user)
+):
+    """Update global portal settings (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    update_dict = update_data.dict(exclude_unset=True)
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    return portal_settings_repo.update(update_dict)
 
 
 # ==========================================

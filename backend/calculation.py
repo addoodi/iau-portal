@@ -140,6 +140,123 @@ def calculate_vacation_balance(employee: Employee, all_approved_requests: List[L
 
     return round(max(0.0, earned_balance - total_used), 2)
 
+
+def get_permanent_contract_period(today: date) -> Tuple[date, date]:
+    """
+    Returns the current calendar year period for permanent employees.
+    Period is always Jan 1 to Dec 31 of the current year.
+    """
+    return date(today.year, 1, 1), date(today.year, 12, 31)
+
+
+def _calculate_earned_for_year(employee: Employee, year_start: date, year_end: date,
+                                emp_start_date: date, calc_end: date) -> float:
+    """
+    Calculate earned vacation balance for a given year period.
+    Handles the case where employee started mid-year.
+    """
+    # Effective start is the later of year_start or employee start date
+    effective_start = max(year_start, emp_start_date)
+    # Effective end is the earlier of year_end or calc_end
+    effective_end = min(year_end, calc_end)
+
+    if effective_start > effective_end:
+        return 0.0
+
+    earned = 0.0
+    current_month_cursor = date(effective_start.year, effective_start.month, 1)
+
+    while current_month_cursor <= effective_end:
+        # Month of effective start
+        if (current_month_cursor.year == effective_start.year and
+                current_month_cursor.month == effective_start.month):
+            if effective_start.day <= 15:
+                earned += employee.monthly_vacation_earned
+            else:
+                earned += employee.monthly_vacation_earned / 2.0
+
+        # Month of effective end (if different from start month)
+        elif (current_month_cursor.year == effective_end.year and
+              current_month_cursor.month == effective_end.month):
+            if effective_end.day > 15:
+                earned += employee.monthly_vacation_earned
+            else:
+                earned += employee.monthly_vacation_earned / 2.0
+
+        # Full months in between
+        else:
+            earned += employee.monthly_vacation_earned
+
+        current_month_cursor += relativedelta(months=1)
+
+    return earned
+
+
+def _calculate_used_for_year(employee_id: str, all_approved_requests: List[LeaveRequest],
+                              year_start: date, year_end: date) -> int:
+    """Calculate total approved leave days used within a year period."""
+    total_used = 0
+    for req in all_approved_requests:
+        if req.employee_id != employee_id:
+            continue
+        req_start = datetime.strptime(req.start_date, "%Y-%m-%d").date()
+        if year_start <= req_start <= year_end:
+            total_used += req.duration
+    return total_used
+
+
+def calculate_permanent_vacation_balance(
+    employee: Employee,
+    all_approved_requests: List[LeaveRequest],
+    max_carry_over_days: int = 15
+) -> Tuple[float, float]:
+    """
+    Calculates vacation balance for permanent employees.
+    Period is calendar year (Jan 1 - Dec 31).
+    Unused balance from the previous year carries over, capped at max_carry_over_days.
+
+    Returns:
+        Tuple of (total_balance, carry_over_amount)
+    """
+    emp_start_date = datetime.strptime(employee.start_date, "%Y-%m-%d").date()
+    today = date.today()
+
+    if emp_start_date > today:
+        return 0.0, 0.0
+
+    # Current year period
+    current_year_start = date(today.year, 1, 1)
+    current_year_end = date(today.year, 12, 31)
+
+    # Calculate carry-over from previous year (one-year lookback, non-recursive)
+    carry_over = 0.0
+    prev_year_start = date(today.year - 1, 1, 1)
+    prev_year_end = date(today.year - 1, 12, 31)
+
+    if emp_start_date <= prev_year_end:
+        prev_earned = _calculate_earned_for_year(
+            employee, prev_year_start, prev_year_end, emp_start_date, prev_year_end
+        )
+        prev_used = _calculate_used_for_year(
+            employee.id, all_approved_requests, prev_year_start, prev_year_end
+        )
+        prev_remaining = max(0.0, prev_earned - prev_used)
+        carry_over = min(prev_remaining, max_carry_over_days)
+
+    # Calculate earned for current year
+    earned_this_year = _calculate_earned_for_year(
+        employee, current_year_start, current_year_end, emp_start_date, today
+    )
+
+    # Calculate used for current year
+    used_this_year = _calculate_used_for_year(
+        employee.id, all_approved_requests, current_year_start, current_year_end
+    )
+
+    total_balance = carry_over + earned_this_year - used_this_year
+    return round(max(0.0, total_balance), 2), round(carry_over, 2)
+
+
 def calculate_date_range(filter_type: str, start_date_str: Optional[str] = None,
                         end_date_str: Optional[str] = None,
                         contract_start: Optional[date] = None) -> Tuple[date, date]:

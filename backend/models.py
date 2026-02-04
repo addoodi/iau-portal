@@ -30,6 +30,7 @@ class Employee(BaseModel):
     monthly_vacation_earned: float = 2.5
     signature_path: Optional[str] = None
     contract_auto_renewed: Optional[bool] = False
+    employee_type: str = 'contractor'  # 'permanent' or 'contractor'
 
 class EmployeeWithBalance(Employee):
     vacation_balance: float
@@ -38,6 +39,7 @@ class EmployeeWithBalance(Employee):
     contract_end_date: Optional[str] = None
     days_remaining_in_contract: Optional[int] = None
     contract_auto_renewed: Optional[bool] = False  # True if contract was auto-renewed and needs verification
+    carry_over_balance: Optional[float] = None  # Only for permanent employees
 
 class AttendanceLog(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -110,6 +112,7 @@ class EmployeeCreate(BaseModel):
     monthly_vacation_earned: Optional[float] = 2.5
     manager_id: Optional[str] = None
     contract_auto_renewed: Optional[bool] = False
+    employee_type: Optional[str] = 'contractor'  # 'permanent' or 'contractor'
 
 class EmployeeUpdate(BaseModel):
     employee_id: Optional[str] = None  # Allow changing employee ID (admin only)
@@ -125,6 +128,7 @@ class EmployeeUpdate(BaseModel):
     monthly_vacation_earned: Optional[float] = None
     role: Optional[str] = None
     contract_auto_renewed: Optional[bool] = None
+    employee_type: Optional[str] = None  # 'permanent' or 'contractor'
 
 class UserPasswordUpdate(BaseModel):
     current_password: str
@@ -201,3 +205,11 @@ class AuditLogCreate(BaseModel):
     entity_type: str
     entity_id: str
     details: Optional[str] = None
+
+# Portal Settings Models
+class PortalSettings(BaseModel):
+    id: int = 1
+    max_carry_over_days: int = 15
+
+class PortalSettingsUpdate(BaseModel):
+    max_carry_over_days: Optional[int] = None

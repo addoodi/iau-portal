@@ -20,6 +20,7 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
     start_date: initialUser?.start_date || '',
     monthly_vacation_earned: initialUser?.monthly_vacation_earned || 2.5,
     manager_id: initialUser?.manager_id || '',
+    employee_type: initialUser?.employee_type || 'contractor',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -99,6 +100,13 @@ export default function AddUserModal({ onClose, onUserAdded, initialUser = null 
                         <option value="dean">Dean</option>
                         <option value="manager">Manager</option>
                         <option value="employee">Employee</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">{t.employeeType}</label>
+                    <select name="employee_type" className="w-full border border-gray-300 p-2 text-sm bg-white focus:border-primary focus:outline-none" value={formData.employee_type} onChange={handleChange}>
+                        <option value="contractor">{t.contractor}</option>
+                        <option value="permanent">{t.permanent}</option>
                     </select>
                 </div>
             </div>

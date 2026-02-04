@@ -8,10 +8,11 @@ from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from backend.database import (
     UserModel, EmployeeModel, UnitModel, LeaveRequestModel,
-    AttendanceLogModel, EmailSettingsModel
+    AttendanceLogModel, EmailSettingsModel, PortalSettingsModel
 )
 from backend.models import (
-    User, Employee, Unit, LeaveRequest, AttendanceLog, EmailSettings
+    User, Employee, Unit, LeaveRequest, AttendanceLog, EmailSettings,
+    PortalSettings
 )
 
 
@@ -106,7 +107,8 @@ class DBEmployeeRepository:
             start_date=e.start_date,
             monthly_vacation_earned=e.monthly_vacation_earned,
             signature_path=e.signature_path,
-            contract_auto_renewed=e.contract_auto_renewed
+            contract_auto_renewed=e.contract_auto_renewed,
+            employee_type=e.employee_type or 'contractor'
         ) for e in employees]
 
     def get_by_id(self, employee_id: str) -> Optional[Employee]:
@@ -126,7 +128,8 @@ class DBEmployeeRepository:
                 start_date=emp.start_date,
                 monthly_vacation_earned=emp.monthly_vacation_earned,
                 signature_path=emp.signature_path,
-                contract_auto_renewed=emp.contract_auto_renewed
+                contract_auto_renewed=emp.contract_auto_renewed,
+                employee_type=emp.employee_type or 'contractor'
             )
         return None
 
@@ -147,7 +150,8 @@ class DBEmployeeRepository:
                 start_date=emp.start_date,
                 monthly_vacation_earned=emp.monthly_vacation_earned,
                 signature_path=emp.signature_path,
-                contract_auto_renewed=emp.contract_auto_renewed
+                contract_auto_renewed=emp.contract_auto_renewed,
+                employee_type=emp.employee_type or 'contractor'
             )
         return None
 
@@ -169,7 +173,8 @@ class DBEmployeeRepository:
             start_date=employee.start_date,
             monthly_vacation_earned=employee.monthly_vacation_earned,
             signature_path=employee.signature_path,
-            contract_auto_renewed=employee.contract_auto_renewed
+            contract_auto_renewed=employee.contract_auto_renewed,
+            employee_type=employee.employee_type or 'contractor'
         )
         self.db.add(db_emp)
         self.db.commit()
@@ -197,6 +202,7 @@ class DBEmployeeRepository:
             db_emp.monthly_vacation_earned = updated_employee.monthly_vacation_earned
             db_emp.signature_path = updated_employee.signature_path
             db_emp.contract_auto_renewed = updated_employee.contract_auto_renewed
+            db_emp.employee_type = updated_employee.employee_type or 'contractor'
             self.db.commit()
             self.db.refresh(db_emp)
         return updated_employee
@@ -479,3 +485,36 @@ class DBEmailSettingsRepository:
             self.db.commit()
             self.db.refresh(db_settings)
         return settings
+
+
+class DBPortalSettingsRepository:
+    """PostgreSQL-backed portal settings repository (singleton)"""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get(self) -> PortalSettings:
+        settings = self.db.query(PortalSettingsModel).filter(PortalSettingsModel.id == 1).first()
+        if settings:
+            return PortalSettings(
+                id=settings.id,
+                max_carry_over_days=settings.max_carry_over_days
+            )
+        # Return defaults if not yet seeded
+        return PortalSettings()
+
+    def update(self, update_data: dict) -> PortalSettings:
+        db_settings = self.db.query(PortalSettingsModel).filter(PortalSettingsModel.id == 1).first()
+        if not db_settings:
+            db_settings = PortalSettingsModel(id=1, max_carry_over_days=15)
+            self.db.add(db_settings)
+
+        if 'max_carry_over_days' in update_data and update_data['max_carry_over_days'] is not None:
+            db_settings.max_carry_over_days = update_data['max_carry_over_days']
+
+        self.db.commit()
+        self.db.refresh(db_settings)
+        return PortalSettings(
+            id=db_settings.id,
+            max_carry_over_days=db_settings.max_carry_over_days
+        )

@@ -194,7 +194,17 @@ export const TRANSLATIONS = {
     returnToWorkDate: "Return to Work Date",
     noTeamMembersInUnit: "No team members in this unit",
     switchToHijri: "Switch to Hijri Calendar",
-    switchToGregorian: "Switch to Gregorian Calendar"
+    switchToGregorian: "Switch to Gregorian Calendar",
+    employeeType: "Employee Type",
+    permanent: "Permanent",
+    contractor: "Contractor",
+    carryOverBalance: "Carry-Over Balance",
+    maxCarryOverDays: "Max Carry-Over Days",
+    portalSettings: "Portal Settings",
+    portalSettingsSaved: "Portal Settings saved successfully",
+    downloadDocx: "Download Word",
+    downloadPdf: "Download PDF",
+    calendarYear: "Calendar Year"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -390,6 +400,16 @@ export const TRANSLATIONS = {
     returnToWorkDate: "تاريخ العودة للعمل",
     noTeamMembersInUnit: "لا يوجد أعضاء فريق في هذه الوحدة",
     switchToHijri: "التبديل إلى التقويم الهجري",
-    switchToGregorian: "التبديل إلى التقويم الميلادي"
+    switchToGregorian: "التبديل إلى التقويم الميلادي",
+    employeeType: "نوع الموظف",
+    permanent: "دائم",
+    contractor: "متعاقد",
+    carryOverBalance: "رصيد مرحّل",
+    maxCarryOverDays: "الحد الأقصى للأيام المرحّلة",
+    portalSettings: "إعدادات البوابة",
+    portalSettingsSaved: "تم حفظ إعدادات البوابة بنجاح",
+    downloadDocx: "تحميل Word",
+    downloadPdf: "تحميل PDF",
+    calendarYear: "السنة الميلادية"
   }
 };

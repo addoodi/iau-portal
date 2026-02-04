@@ -3,11 +3,32 @@ SQLAlchemy Database Models and Configuration
 Maps to Pydantic models in models.py
 """
 import os
-from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean, DateTime, Text, ForeignKey, JSON
+from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean, DateTime, Text, ForeignKey, JSON, TypeDecorator
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
-from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
+
+
+# Database-agnostic UUID type
+# Uses native PostgreSQL UUID when available, falls back to String(36) for SQLite
+class GUID(TypeDecorator):
+    """Platform-independent UUID type. Uses PostgreSQL UUID, otherwise String(36)."""
+    impl = String(36)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            if isinstance(value, uuid.UUID):
+                return str(value)
+            return str(value)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            if not isinstance(value, uuid.UUID):
+                return uuid.UUID(value)
+        return value
+
 
 # Database URL from environment variable
 DATABASE_URL = os.getenv(
@@ -15,14 +36,24 @@ DATABASE_URL = os.getenv(
     "postgresql://iau_admin:iau_secure_password_2024@localhost:5432/iau_portal"
 )
 
-# Create SQLAlchemy engine
-engine = create_engine(
-    DATABASE_URL,
-    echo=False,  # Set to False to reduce console output
-    pool_pre_ping=True,  # Verify connections before using them
-    pool_size=10,
-    max_overflow=20
-)
+# Detect if using SQLite (for testing)
+_is_sqlite = DATABASE_URL.startswith("sqlite")
+
+# Create SQLAlchemy engine with appropriate settings
+_engine_kwargs = {
+    "echo": False,
+}
+
+if not _is_sqlite:
+    _engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_size": 10,
+        "max_overflow": 20,
+    })
+else:
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -38,7 +69,7 @@ class UserModel(Base):
     """User authentication and authorization"""
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False)  # 'admin', 'manager', 'employee', 'dean'
@@ -53,7 +84,7 @@ class EmployeeModel(Base):
     __tablename__ = "employees"
 
     id = Column(String(50), primary_key=True)  # "IAU-001" or "0000001"
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    user_id = Column(GUID, ForeignKey("users.id"), unique=True, nullable=False, index=True)
     first_name_ar = Column(String(100), nullable=False)
     last_name_ar = Column(String(100), nullable=False)
     first_name_en = Column(String(100), nullable=False)
@@ -66,6 +97,7 @@ class EmployeeModel(Base):
     monthly_vacation_earned = Column(Float, default=2.5, nullable=False)
     signature_path = Column(String(500), nullable=True)
     contract_auto_renewed = Column(Boolean, default=False, nullable=False)
+    employee_type = Column(String(20), default='contractor', nullable=False)  # 'permanent' or 'contractor'
 
     # Relationships
     user = relationship("UserModel", back_populates="employee")
@@ -111,7 +143,7 @@ class AttendanceLogModel(Base):
     """Employee attendance tracking"""
     __tablename__ = "attendance_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
     employee_id = Column(String(50), ForeignKey("employees.id"), nullable=False, index=True)
     date = Column(String(10), nullable=False, index=True)  # YYYY-MM-DD
     check_in = Column(DateTime, nullable=False)
@@ -135,6 +167,14 @@ class EmailSettingsModel(Base):
     is_active = Column(Boolean, default=False, nullable=False)
 
 
+class PortalSettingsModel(Base):
+    """Global portal settings (singleton)"""
+    __tablename__ = "portal_settings"
+
+    id = Column(Integer, primary_key=True, default=1)  # Only one record
+    max_carry_over_days = Column(Integer, default=15, nullable=False)
+
+
 class AuditLogModel(Base):
     """
     Audit log for tracking critical user actions.
@@ -155,9 +195,9 @@ class AuditLogModel(Base):
     """
     __tablename__ = "audit_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
     timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
-    user_id = Column(UUID(as_uuid=True), nullable=True)  # None for system actions
+    user_id = Column(GUID, nullable=True)  # None for system actions
     user_email = Column(String(255), nullable=True)
     action = Column(String(100), nullable=False, index=True)  # e.g., "leave_request_approved"
     entity_type = Column(String(50), nullable=False, index=True)  # e.g., "leave_request"
@@ -213,8 +253,20 @@ def init_db():
     except Exception as e:
         print(f"[SEED] Default unit already exists or error: {e}")
         db.rollback()
-    finally:
-        db.close()
+
+    # Create default portal settings if they don't exist
+    try:
+        existing_settings = db.query(PortalSettingsModel).filter(PortalSettingsModel.id == 1).first()
+        if not existing_settings:
+            default_settings = PortalSettingsModel(max_carry_over_days=15)
+            db.add(default_settings)
+            db.commit()
+            print("[SEED] Created default portal settings (max_carry_over_days=15)")
+    except Exception as e:
+        print(f"[SEED] Portal settings already exist or error: {e}")
+        db.rollback()
+
+    db.close()
 
     print("[SUCCESS] Database tables created successfully!")
 

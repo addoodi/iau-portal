@@ -216,9 +216,9 @@ export const fetchMe = async () => {
     return handleResponse(response);
 };
 
-export const downloadRequestForm = async (requestId) => {
+export const downloadRequestForm = async (requestId, format = 'docx') => {
 
-    const response = await fetch(`${API_BASE_URL}/requests/${requestId}/download`, {
+    const response = await fetch(`${API_BASE_URL}/requests/${requestId}/download?format=${format}`, {
 
         headers: getAuthHeaders(),
 
@@ -242,7 +242,7 @@ export const downloadRequestForm = async (requestId) => {
 
     const contentDisposition = response.headers.get('content-disposition');
 
-    let filename = `request-${requestId}.docx`; // Default filename
+    let filename = `request-${requestId}.${format}`; // Default filename
 
     if (contentDisposition) {
 
@@ -378,9 +378,21 @@ export const getContractsNeedingVerification = async () => {
     return await response.json();
 };
 
+export const fetchPortalSettings = async () => {
+    const response = await fetch(`${API_BASE_URL}/settings/portal`, {
+        headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+};
 
-
-
+export const updatePortalSettings = async (data) => {
+    const response = await fetch(`${API_BASE_URL}/settings/portal`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+};
 
 
 

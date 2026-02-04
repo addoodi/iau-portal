@@ -11,7 +11,8 @@ from typing import List
 import json
 from pathlib import Path
 
-from .repositories import CSVEmployeeRepository, CSVUserRepository, CSVLeaveRequestRepository
+from .database import SessionLocal
+from .db_repositories import DBEmployeeRepository, DBUserRepository, DBLeaveRequestRepository, DBPortalSettingsRepository
 from .services import EmployeeService
 from .email_service import EmailService
 from .email_templates import (
@@ -26,13 +27,14 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# Tracking file for sent notifications
+# Tracking file for sent notifications (JSON-based dedup, not critical data)
 NOTIFICATIONS_TRACKING_FILE = Path("backend/data/sent_notifications.json")
 
 
 class NotificationTracker:
     """
-    Track which notifications have been sent to avoid duplicates
+    Track which notifications have been sent to avoid duplicates.
+    Uses a simple JSON file for deduplication tracking.
     """
 
     def __init__(self):
@@ -105,16 +107,18 @@ def check_and_send_contract_notifications():
 
     Sends two types of notifications:
     1. 40-day reminder: When employee has 40 days left in contract
-    2. Critical warning: When vacation balance equals remaining days (±1 day)
+    2. Critical warning: When vacation balance equals remaining days (+-1 day)
     """
     logging.info("Starting contract notification check...")
 
+    db = SessionLocal()
     try:
-        # Initialize services
-        employee_repo = CSVEmployeeRepository()
-        user_repo = CSVUserRepository()
-        leave_request_repo = CSVLeaveRequestRepository()
-        employee_service = EmployeeService(employee_repo, user_repo, leave_request_repo)
+        # Initialize services with DB repositories
+        employee_repo = DBEmployeeRepository(db)
+        user_repo = DBUserRepository(db)
+        leave_request_repo = DBLeaveRequestRepository(db)
+        portal_settings_repo = DBPortalSettingsRepository(db)
+        employee_service = EmployeeService(employee_repo, user_repo, leave_request_repo, portal_settings_repo)
         email_service = EmailService()
         tracker = NotificationTracker()
 
@@ -125,6 +129,10 @@ def check_and_send_contract_notifications():
         notifications_sent = 0
 
         for employee in employees:
+            # Skip permanent employees (they use calendar year, no contract expiry notifications)
+            if getattr(employee, 'employee_type', 'contractor') == 'permanent':
+                continue
+
             # Get employee's email from user record
             try:
                 employee_user = user_repo.get_by_id(employee.user_id)
@@ -165,7 +173,7 @@ def check_and_send_contract_notifications():
                             notifications_sent += 1
                             logging.info(f"40-day notification sent to {employee.id}")
 
-                # Check for critical notification (balance equals remaining days, ±1 day tolerance)
+                # Check for critical notification (balance equals remaining days, +-1 day tolerance)
                 # This sends when vacation_balance is approximately equal to days_remaining
                 balance_equals_days = abs(employee.vacation_balance - days_remaining) <= 1
 
@@ -204,6 +212,8 @@ def check_and_send_contract_notifications():
 
     except Exception as e:
         logging.error(f"Contract notification check failed: {str(e)}")
+    finally:
+        db.close()
 
 
 def run_scheduler():

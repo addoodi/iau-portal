@@ -300,8 +300,18 @@ export default function Dashboard() {
           </div>
           {user.days_remaining_in_contract !== undefined && (
             <div className="bg-gray-50 p-2 border border-gray-200 flex items-center justify-between text-sm">
-              <span className="text-gray-600">{t.contractEndsIn || "Contract ends in"}</span>
+              <span className="text-gray-600">
+                {user.employee_type === 'permanent'
+                  ? (t.calendarYear || "Calendar Year")
+                  : (t.contractEndsIn || "Contract ends in")}
+              </span>
               <span className="font-semibold text-gray-800">{user.days_remaining_in_contract} {t.days || "days"}</span>
+            </div>
+          )}
+          {user.carry_over_balance > 0 && (
+            <div className="bg-amber-50 p-2 border border-amber-200 flex items-center justify-between text-sm">
+              <span className="text-amber-700">{t.carryOverBalance || "Carry-Over Balance"}</span>
+              <span className="font-semibold text-amber-800">{user.carry_over_balance} {t.days || "days"}</span>
             </div>
           )}
         </div>

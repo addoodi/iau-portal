@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePortal } from '../context/PortalContext';
-import { API_BASE_URL, getToken } from '../api';
-import { Upload, AlertTriangle, Check, X } from 'lucide-react';
+import { API_BASE_URL, getToken, fetchPortalSettings, updatePortalSettings } from '../api';
+import { Upload, AlertTriangle, Check, X, Settings } from 'lucide-react';
 
 export default function SiteSettings() {
   const { t, user } = usePortal();
@@ -12,9 +12,36 @@ export default function SiteSettings() {
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [message, setMessage] = useState(null);
 
+  // Portal settings state
+  const [portalSettings, setPortalSettings] = useState({ max_carry_over_days: 15 });
+  const [savingPortalSettings, setSavingPortalSettings] = useState(false);
+
   useEffect(() => {
     fetchTemplateStatus();
+    loadPortalSettings();
   }, []);
+
+  const loadPortalSettings = async () => {
+    try {
+      const data = await fetchPortalSettings();
+      setPortalSettings(data);
+    } catch (error) {
+      console.error('Failed to fetch portal settings:', error);
+    }
+  };
+
+  const handleSavePortalSettings = async () => {
+    setSavingPortalSettings(true);
+    setMessage(null);
+    try {
+      await updatePortalSettings({ max_carry_over_days: portalSettings.max_carry_over_days });
+      setMessage({ type: 'success', text: t.portalSettingsSaved || 'Portal settings saved successfully' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'Failed to save portal settings' });
+    } finally {
+      setSavingPortalSettings(false);
+    }
+  };
 
   const fetchTemplateStatus = async () => {
     try {
@@ -134,6 +161,41 @@ export default function SiteSettings() {
         <p className="text-xs text-gray-500 mt-2">
           {t.templateHint || 'Upload a .docx file to be used as the vacation request form template'}
         </p>
+      </div>
+
+      {/* Portal Settings */}
+      <div className="mt-8 pt-8 border-t border-gray-200">
+        <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+          <Settings size={20} />
+          {t.portalSettings || 'Portal Settings'}
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t.maxCarryOverDays || 'Max Carry-Over Days'}
+            </label>
+            <p className="text-xs text-gray-500 mb-2">
+              Maximum vacation days permanent employees can carry over to the next year.
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="0"
+                max="365"
+                value={portalSettings.max_carry_over_days}
+                onChange={(e) => setPortalSettings({ ...portalSettings, max_carry_over_days: parseInt(e.target.value) || 0 })}
+                className="w-32 px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+              <button
+                onClick={handleSavePortalSettings}
+                disabled={savingPortalSettings}
+                className="px-4 py-2 bg-primary text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
+              >
+                {savingPortalSettings ? '...' : (t.save || 'Save')}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Email Settings Note */}
