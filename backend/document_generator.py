@@ -111,7 +111,21 @@ def create_vacation_form(context):
     Returns:
         BytesIO: A memory stream containing the generated DOCX document.
     """
-    doc = DocxTemplate("backend/templates/vacation_template.docx")
+    # Look for template in multiple locations (volume mount first, then bundled fallback)
+    template_paths = [
+        "backend/templates/vacation_template.docx",  # Volume-mounted (production)
+        "/app/backend/templates_bundled/vacation_template.docx",  # Bundled fallback (Docker)
+        os.path.join(os.path.dirname(__file__), "templates", "vacation_template.docx"),  # Relative to this file
+    ]
+    template_path = None
+    for path in template_paths:
+        if os.path.exists(path):
+            template_path = path
+            break
+    if not template_path:
+        raise FileNotFoundError(f"Template not found. Searched: {template_paths}")
+
+    doc = DocxTemplate(template_path)
 
     # Extract signature paths before rendering
     employee_sig_path = context.pop('employee_signature_path', None)
