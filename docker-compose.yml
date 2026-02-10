@@ -30,7 +30,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: iau-portal-backend:latest
     container_name: iau-portal-backend
     restart: unless-stopped
     # Backend is only accessible through nginx proxy, no direct external access needed
@@ -72,7 +71,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    image: iau-portal-frontend:latest
     container_name: iau-portal-frontend
     restart: unless-stopped
     ports:
