@@ -229,6 +229,29 @@ def get_db():
         db.close()
 
 
+def _run_migrations(db):
+    """
+    Run schema migrations for existing databases.
+    Adds missing columns that were added after initial deployment.
+    """
+    from sqlalchemy import text, inspect
+
+    inspector = inspect(engine)
+
+    # Check if employees table exists
+    if 'employees' in inspector.get_table_names():
+        columns = [col['name'] for col in inspector.get_columns('employees')]
+
+        # Migration: Add employee_type column if missing
+        if 'employee_type' not in columns:
+            print("[MIGRATION] Adding employee_type column to employees table...")
+            db.execute(text(
+                "ALTER TABLE employees ADD COLUMN employee_type VARCHAR(20) DEFAULT 'contractor' NOT NULL"
+            ))
+            db.commit()
+            print("[MIGRATION] employee_type column added successfully")
+
+
 def init_db():
     """
     Initialize database tables
@@ -236,6 +259,16 @@ def init_db():
     """
     print("Creating database tables...")
     Base.metadata.create_all(bind=engine)
+
+    # Run migrations for existing databases
+    db = SessionLocal()
+    try:
+        _run_migrations(db)
+    except Exception as e:
+        print(f"[MIGRATION] Migration error (may be expected on fresh install): {e}")
+        db.rollback()
+    finally:
+        db.close()
 
     # Create default unit for admin if it doesn't exist
     db = SessionLocal()
