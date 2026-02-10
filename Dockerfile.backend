@@ -5,14 +5,30 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies including Arabic fonts for PDF conversion
+# Accept EULA for Microsoft fonts non-interactively
+RUN echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections
+
 RUN apt-get update && apt-get install -y \
     gcc \
     curl \
+    # LibreOffice for PDF conversion
     libreoffice-writer \
+    # Microsoft core fonts (Times New Roman, Arial, etc.)
+    ttf-mscorefonts-installer \
+    # Arabic font packages
     fonts-arabeyes \
+    fonts-hosny-amiri \
     fonts-noto-core \
     fonts-noto-ui-core \
+    fonts-noto-color-emoji \
+    # Font configuration
     fontconfig \
+    # Required libraries for LibreOffice headless rendering
+    libxrender1 \
+    libxt6 \
+    libdbus-1-3 \
+    libsm6 \
+    libice6 \
     && fc-cache -f -v \
     && rm -rf /var/lib/apt/lists/*
 

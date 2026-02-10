@@ -34,17 +34,23 @@ def convert_docx_to_pdf(docx_stream: BytesIO) -> BytesIO:
             f.write(docx_stream.read())
 
         try:
+            # Use writer_pdf_Export filter with options for better compatibility
+            # SelectPdfVersion=1 = PDF/A-1, ExportFormFields=false flattens form fields
             result = subprocess.run(
                 [
-                    "libreoffice", "--headless", "--norestore",
-                    "--convert-to", "pdf",
+                    "libreoffice",
+                    "--headless",
+                    "--norestore",
+                    "--nofirststartwizard",
+                    "--convert-to", "pdf:writer_pdf_Export:{'ExportFormFields':{'type':'boolean','value':'false'},'SelectPdfVersion':{'type':'long','value':'0'}}",
                     "--outdir", tmpdir,
                     docx_path
                 ],
                 check=True,
                 timeout=60,
                 capture_output=True,
-                text=True
+                text=True,
+                env={**os.environ, "HOME": tmpdir}  # Set HOME to avoid profile issues
             )
             logger.debug(f"LibreOffice output: {result.stdout}")
         except FileNotFoundError:
