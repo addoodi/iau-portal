@@ -682,7 +682,13 @@ def download_vacation_form(request_id: int,
         'manager_signature_path': manager.signature_path if manager else None,
     }
 
-    file_stream = create_vacation_form(context)
+    try:
+        file_stream = create_vacation_form(context)
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Template file not found. Please contact administrator to upload the vacation template. ({e})"
+        )
 
     if format == "pdf":
         from .pdf_converter import convert_docx_to_pdf
