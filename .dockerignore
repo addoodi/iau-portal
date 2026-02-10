@@ -7,9 +7,6 @@ __pycache__/
 *.pyd
 .Python
 
-# Backend code (not needed for frontend build)
-backend/
-
 # Build outputs (will be regenerated)
 build/
 dist/
