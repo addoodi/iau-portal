@@ -4,11 +4,16 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including Arabic fonts for PDF conversion
 RUN apt-get update && apt-get install -y \
     gcc \
     curl \
     libreoffice-writer \
+    fonts-arabeyes \
+    fonts-noto-core \
+    fonts-noto-ui-core \
+    fontconfig \
+    && fc-cache -f -v \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
