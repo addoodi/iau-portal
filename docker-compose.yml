@@ -27,10 +27,10 @@ services:
 
   # Backend - FastAPI
   backend:
-    image: iau-portal-backend:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile.backend
+    image: iau-portal-backend:latest
     container_name: iau-portal-backend
     restart: unless-stopped
     # Backend is only accessible through nginx proxy, no direct external access needed
@@ -69,10 +69,10 @@ services:
 
   # Frontend - React + Vite + Nginx (serves both frontend and proxies API to backend)
   frontend:
-    image: iau-portal-frontend:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile.frontend
+    image: iau-portal-frontend:latest
     container_name: iau-portal-frontend
     restart: unless-stopped
     ports:
