@@ -216,9 +216,9 @@ export const fetchMe = async () => {
     return handleResponse(response);
 };
 
-export const downloadRequestForm = async (requestId, format = 'docx') => {
+export const downloadRequestForm = async (requestId) => {
 
-    const response = await fetch(`${API_BASE_URL}/requests/${requestId}/download?format=${format}`, {
+    const response = await fetch(`${API_BASE_URL}/requests/${requestId}/download`, {
 
         headers: getAuthHeaders(),
 
@@ -242,7 +242,7 @@ export const downloadRequestForm = async (requestId, format = 'docx') => {
 
     const contentDisposition = response.headers.get('content-disposition');
 
-    let filename = `request-${requestId}.${format}`; // Default filename
+    let filename = `request-${requestId}.docx`; // Default filename
 
     if (contentDisposition) {
 

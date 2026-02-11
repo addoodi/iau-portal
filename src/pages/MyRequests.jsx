@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, XCircle, Paperclip, FileText } from 'lucide-react';
+import { Download, XCircle, Paperclip } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 import { downloadRequestForm, downloadAttachment } from '../api';
 
@@ -9,19 +9,10 @@ export default function MyRequests() {
 
   const generateDocx = async (req) => {
     try {
-        await downloadRequestForm(req.id, 'docx');
+        await downloadRequestForm(req.id);
     } catch (e) {
         console.error(e);
         alert("Failed to download");
-    }
-  };
-
-  const generatePdf = async (req) => {
-    try {
-        await downloadRequestForm(req.id, 'pdf');
-    } catch (e) {
-        console.error(e);
-        alert("Failed to download PDF");
     }
   };
 
@@ -98,7 +89,6 @@ export default function MyRequests() {
                   </td>
                   <td className="px-6 py-4 flex gap-2 justify-end">
                     {(req.status === 'Approved' || req.status === 'Rejected') && (
-                      <>
                         <button
                           onClick={() => generateDocx(req)}
                           className={`flex items-center gap-2 px-3 py-1.5 text-primary hover:bg-primary/10 border border-gray-200 font-medium transition-colors ${
@@ -106,18 +96,8 @@ export default function MyRequests() {
                           }`}
                         >
                           <Download size={16} />
-                          <span className="text-sm">{t.downloadDocx || 'Word'}</span>
+                          <span className="text-sm">{t.download || 'Download'}</span>
                         </button>
-                        <button
-                          onClick={() => generatePdf(req)}
-                          className={`flex items-center gap-2 px-3 py-1.5 text-red-600 hover:bg-red-50 border border-gray-200 font-medium transition-colors ${
-                            isRTL ? 'flex-row-reverse' : ''
-                          }`}
-                        >
-                          <FileText size={16} />
-                          <span className="text-sm">{t.downloadPdf || 'PDF'}</span>
-                        </button>
-                      </>
                     )}
                     {req.status === 'Pending' && (
                       <button onClick={() => handleCancel(req.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-full" title={t.cancel}>

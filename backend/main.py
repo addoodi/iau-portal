@@ -588,7 +588,6 @@ def update_leave_request(
 
 @app.get("/api/requests/{request_id}/download")
 def download_vacation_form(request_id: int,
-                           format: str = "docx",
                            employee_service: EmployeeService = Depends(get_employee_service),
                            leave_request_service: LeaveRequestService = Depends(get_leave_request_service),
                            current_user: User = Depends(get_current_user)):
@@ -689,18 +688,6 @@ def download_vacation_form(request_id: int,
             status_code=500,
             detail=f"Template file not found. Please contact administrator to upload the vacation template. ({e})"
         )
-
-    if format == "pdf":
-        from .pdf_converter import convert_docx_to_pdf
-        try:
-            pdf_stream = convert_docx_to_pdf(file_stream)
-            return StreamingResponse(
-                pdf_stream,
-                media_type="application/pdf",
-                headers={"Content-Disposition": f"attachment; filename=vacation_request_{request_id}.pdf"}
-            )
-        except RuntimeError as e:
-            raise HTTPException(status_code=500, detail=str(e))
 
     return StreamingResponse(
         file_stream,
